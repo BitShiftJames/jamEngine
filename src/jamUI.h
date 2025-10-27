@@ -50,6 +50,7 @@ struct UI_ASSETS {
   // because everything passed to the UI is a pointer and I can change the rendering 
   // logic at any time.
   healthComponent *PlayerInformation;
+  fallComponent *PlayerDebugFallInformation;
   
   // TODO: Smarter UI collision.
   u32 player_collision_count;
@@ -61,7 +62,7 @@ struct UI_ASSETS {
   Texture2D item_icons;
 };
 
-void DrawUI(UI_ASSETS *Assets, RenderTexture2D UI_texture, b32 ProfilerToggle, b32 PlayerToggle) {
+void DrawUI(UI_ASSETS *Assets, RenderTexture2D UI_texture) {
   TIMED_BLOCK();
     
     if (Assets->Dirty) {
@@ -70,51 +71,52 @@ void DrawUI(UI_ASSETS *Assets, RenderTexture2D UI_texture, b32 ProfilerToggle, b
         Assets->storage_collision_count = 0;
         ClearBackground(Color{0, 0, 0, 0});
       
-      if (PlayerToggle) {
-          for (u32 i = 0; i < Assets->playerInventory->DisplaySlots; i++) {
-            u32 slotY = i % Assets->playerInventory->Row;
-            u32 slotX = i / Assets->playerInventory->Row;
-            
-            Rectangle destRect = {(f32)(slotX * (Assets->playerInventory->Size * 1.2) + 20), (f32)(slotY * (Assets->playerInventory->Size * 1.2) + 200), 
-                                  (f32)Assets->playerInventory->Size, (f32)Assets->playerInventory->Size};
-            
-            DrawRectangleRounded(destRect, .3f, 10, Color{100, 0, 255, 128});
-            Assets->playerInvCollision[Assets->player_collision_count++] = JamRectMinDim(destRect);
-            if (Assets->playerInventory->storage[i].HasItem) {
+        for (u32 i = 0; i < Assets->playerInventory->DisplaySlots; i++) {
+          u32 slotY = i % Assets->playerInventory->Row;
+          u32 slotX = i / Assets->playerInventory->Row;
+          
+          Rectangle destRect = {(f32)(slotX * (Assets->playerInventory->Size * 1.2) + 20), (f32)(slotY * (Assets->playerInventory->Size * 1.2) + 200), 
+                                (f32)Assets->playerInventory->Size, (f32)Assets->playerInventory->Size};
+          
+          DrawRectangleRounded(destRect, .3f, 10, Color{100, 0, 255, 128});
+          Assets->playerInvCollision[Assets->player_collision_count++] = JamRectMinDim(destRect);
+          if (Assets->playerInventory->storage[i].HasItem) {
 
-              DrawTexturePro(Assets->item_icons, JamToRayRect(Assets->playerInventory->storage[i].item_in_me.SourceRect), destRect, Vector2{0, 0}, 0.0f, WHITE);
-            }
+            DrawTexturePro(Assets->item_icons, JamToRayRect(Assets->playerInventory->storage[i].item_in_me.SourceRect), destRect, Vector2{0, 0}, 0.0f, WHITE);
           }
+        }
 
-          for (u32 i = 0; i < Assets->storageInventory->DisplaySlots; i++) {
-            u32 slotY = i % Assets->storageInventory->Row;
-            u32 slotX = i / Assets->storageInventory->Row;
-            
-            Rectangle destRect = {(f32)(-(slotX * (Assets->playerInventory->Size * 1.2)) + (GetScreenWidth() - 80)), (f32)(slotY * (Assets->playerInventory->Size * 1.2) + 200), 
-                                  (f32)Assets->playerInventory->Size, (f32)Assets->playerInventory->Size};
-            DrawRectangleRounded(destRect, .3f, 10, Color{100, 0, 255, 128});
-            // USELESS FUCKING LSP.
-            Assets->StorageInvCollision[Assets->storage_collision_count++] = JamRectMinDim(destRect);
-            if (Assets->storageInventory->storage[i].HasItem) {
+        for (u32 i = 0; i < Assets->storageInventory->DisplaySlots; i++) {
+          u32 slotY = i % Assets->storageInventory->Row;
+          u32 slotX = i / Assets->storageInventory->Row;
+          
+          Rectangle destRect = {(f32)(-(slotX * (Assets->playerInventory->Size * 1.2)) + (GetScreenWidth() - 80)), (f32)(slotY * (Assets->playerInventory->Size * 1.2) + 200), 
+                                (f32)Assets->playerInventory->Size, (f32)Assets->playerInventory->Size};
+          DrawRectangleRounded(destRect, .3f, 10, Color{100, 0, 255, 128});
+          // USELESS FUCKING LSP.
+          Assets->StorageInvCollision[Assets->storage_collision_count++] = JamRectMinDim(destRect);
+          if (Assets->storageInventory->storage[i].HasItem) {
 
-              DrawTexturePro(Assets->item_icons, JamToRayRect(Assets->storageInventory->storage[i].item_in_me.SourceRect), destRect, Vector2{0, 0}, 0.0f, WHITE);
-            }
+            DrawTexturePro(Assets->item_icons, JamToRayRect(Assets->storageInventory->storage[i].item_in_me.SourceRect), destRect, Vector2{0, 0}, 0.0f, WHITE);
           }
+        }
 
-          u32 max_count = (u32)(((f32)Assets->PlayerInformation->Health / (f32)MAX_HEALTH) * HEALTH_SLOTS);
-          for (u32 i = 0; i < max_count; i++) {
-            u32 Y = i / HALF_HEALTH_SLOTS;
-            u32 X = i % HALF_HEALTH_SLOTS;
-            DrawRectangle( 30 + (X * 27), (Y * 30) + 30, 25, 20, RED);
-          }
+        u32 max_count = (u32)(((f32)Assets->PlayerInformation->Health / (f32)MAX_HEALTH) * HEALTH_SLOTS);
+        for (u32 i = 0; i < max_count; i++) {
+          u32 Y = i / HALF_HEALTH_SLOTS;
+          u32 X = i % HALF_HEALTH_SLOTS;
+          DrawRectangle( 30 + (X * 27), (Y * 30) + 30, 25, 20, RED);
+        }
         
-      }
+      
 
       Assets->Dirty = false;
       EndTextureMode();
     }
 
   DrawTexturePro(UI_texture.texture, Rectangle{0.0f, 0.0f, (f32)UI_texture.texture.width, -(f32)UI_texture.texture.height}, Rectangle{0.0f, 0.0f, (f32)UI_texture.texture.width, (f32)UI_texture.texture.height}, Vector2{0.0f, 0.0f}, 0.0f, WHITE);
+
+  DrawText(TextFormat("LastKnownGroundPosition: %f", Assets->PlayerDebugFallInformation->lastKnownGroundPositionTiles), 20, 20, 20, WHITE);
 
   DrawTextureRec(Assets->cursor->texture, Assets->cursor->layer1, Assets->cursor->MousePosition, Assets->cursor->layer1Tint);
   DrawTextureRec(Assets->cursor->texture, Assets->cursor->layer2, Assets->cursor->MousePosition, Assets->cursor->layer2Tint);

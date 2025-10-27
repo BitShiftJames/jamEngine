@@ -7,10 +7,6 @@
 #include "jamCollision.h"
 #include "raylib.h"
 
-// 
-// 22:26
-//
-
 #include "stdio.h"
 
 #define MAX_ENTITIES 256
@@ -26,7 +22,11 @@ enum entity_states {
 
 struct healthComponent {
   u32 EntityID;
+
   s32 Health;
+
+  s32 Damage;
+
   u32 EffectFlags;
 };
 
@@ -34,12 +34,12 @@ struct fallComponent {
   u32 EntityID;
 
   b32 groundedLastFrame;
-  f32 lastKnownGroundPosition;
-
+  f32 lastKnownGroundPositionFloatpoint;
+  f32 lastKnownGroundPositionTiles;
 };
 
 u32 hash(u32 ID, u32 Table_size) {
-  // TODO: Test this hash function to make sure it works over a large amount of IDs.
+  // TODO[NumberStuff]: Test this hash function to make sure it works over a large amount of IDs.
   u32 a = 1103515245;
   u32 c = 12345;
   u32 m = 1u << 31; 
@@ -92,7 +92,10 @@ bool DeleteFallComponent(fallComponent *fallComponents, u32 ID) {
 
     if (ID == fallComponents[trying].EntityID) {
       fallComponents[trying].EntityID = 0;
-      fallComponents[trying].lastKnownGroundPosition = 0;
+
+      fallComponents[trying].lastKnownGroundPositionFloatpoint = 0;
+      fallComponents[trying].lastKnownGroundPositionTiles = 0;
+
       return true;
     }
   }
@@ -111,6 +114,7 @@ fallComponent *fallLookUp(fallComponent *fallComponents, u32 ID) {
 
     if (ID == fallComponents[trying].EntityID) {
       Result = &fallComponents[trying];
+
       return Result;
     }
 
@@ -161,6 +165,7 @@ bool DeleteHealthComponent(healthComponent *HealthComponents, u32 ID) {
     if (ID == HealthComponents[trying].EntityID) {
       HealthComponents[trying].EntityID = 0;
       HealthComponents[trying].Health = 0;
+      HealthComponents[trying].Damage = 0;
       return true;
     }
   }
@@ -168,18 +173,35 @@ bool DeleteHealthComponent(healthComponent *HealthComponents, u32 ID) {
   return false;
 }
 
-bool HealthLookUp(healthComponent *HealthComponents, healthComponent *storeComponent, u32 ID) {
+healthComponent *HealthLookUp(healthComponent *HealthComponents, u32 ID) {
+  u32 hash_index = hash(ID, MAX_ENTITIES);
+
+  healthComponent *Result = {};
+
+  for (s32 i = 0; i < MAX_ENTITIES; i++) {
+    s32 trying = (i + hash_index) % MAX_ENTITIES;
+
+    if (ID == HealthComponents[trying].EntityID) {
+      Result = &HealthComponents[trying];
+
+      return Result;
+    }
+
+  }
+  
+  return Result;
+}
+
+// TODO[ECS]: Limit Peak checks to like 3 or something.
+bool HealthPeak(healthComponent *HealthComponents, u32 ID) {
   u32 hash_index = hash(ID, MAX_ENTITIES);
   for (s32 i = 0; i < MAX_ENTITIES; i++) {
     s32 trying = (i + hash_index) % MAX_ENTITIES;
 
     if (ID == HealthComponents[trying].EntityID) {
-      *storeComponent = HealthComponents[trying];
       return true;
     }
-
   }
-
   return false;
 }
 
@@ -256,27 +278,51 @@ static v2 generate_delta_movement(total_entities *global_entities, entity *Entit
   jam_rect2 ground_box = JamRectMinDim(v2{Entity->pos.x + padding, Entity->pos.y + (Entity->dim.y - padding)}, v2{Entity->dim.x - (padding * 2), 1.2});
   jam_rect2 tile_box = collision_rect_construction(ground_box, global_world);
 
-  fallComponent *storeComponent = {};
+  fallComponent *storedFallComponent = {};
   if (fallPeak(global_entities->fallComponents, Entity->EntityID)) {
-    storeComponent = fallLookUp(global_entities->fallComponents, Entity->EntityID);
+    storedFallComponent = fallLookUp(global_entities->fallComponents, Entity->EntityID);
+  }
+
+  healthComponent *storedHealthComponent = {};
+  if (HealthPeak(global_entities->HealthComponents, Entity->EntityID)) {
+    storedHealthComponent = HealthLookUp(global_entities->HealthComponents, Entity->EntityID);
   }
 
   if (!AABBcollisioncheck(ground_box, tile_box)) {
     Entity->acceleration.y += global_world.gravity_constant;
 
       // Null ptr badness.
-      if (storeComponent) {
-        if (storeComponent->groundedLastFrame) {
-          storeComponent->groundedLastFrame = false;
-          storeComponent->lastKnownGroundPosition = Entity->pos.y;
+      if (storedFallComponent) {
+        if (storedFallComponent->groundedLastFrame) {
+          storedFallComponent->groundedLastFrame = false;
+          storedFallComponent->lastKnownGroundPositionTiles = Entity->pos.y / global_world.TileSize;
         }
 
       }
 
   } else {
     // Null ptr badness.
-    if (storeComponent) {
-    storeComponent->groundedLastFrame = true;
+    if (storedFallComponent) {
+      if (!storedFallComponent->groundedLastFrame) {
+
+        if (storedHealthComponent) {
+            // FallDistance can be negative it needs to be reset when the acceleration is flipped.
+          
+            f32 totalFallDistance = 0;
+            if (storedFallComponent->lastKnownGroundPositionTiles) {
+               totalFallDistance = (Entity->pos.y / global_world.TileSize) - (storedFallComponent->lastKnownGroundPositionTiles);
+            }
+
+            if (totalFallDistance > 25) {
+              // TODO[ECS]: Damage might not be a thing that is tracked 
+              // unless the UI just uses it as a thing to set the dirty flag.
+              storedHealthComponent->Damage += 1.2 * (totalFallDistance - 25);
+            }
+            
+        }
+
+      }
+      storedFallComponent->groundedLastFrame = true;
     }
   }
   

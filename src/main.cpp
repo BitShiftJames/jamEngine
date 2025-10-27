@@ -141,7 +141,7 @@ int main() {
       } else {
       }
 
-      if (tileY > global_world.Height / 1.5) { 
+      if (tileY > global_world.Height / 1.2) { 
             CurrentTile.type = 43;
       }
 
@@ -179,15 +179,15 @@ int main() {
   AddFallComponent(global_entities.fallComponents, global_entities.entities[player_entity_count].EntityID);
   // This is a lot of indirection to just set the health information but realistically 
   // this is not an operation that is done often.
-  healthComponent player_health_component;
-  HealthLookUp(global_entities.HealthComponents, &player_health_component, global_entities.entities[player_entity_count].EntityID);
-  global_ui_style.PlayerInformation = &player_health_component;
+  
+  healthComponent *player_health_component = HealthLookUp(global_entities.HealthComponents, global_entities.entities[player_entity_count].EntityID);
+  global_ui_style.PlayerInformation = player_health_component;
+
+  fallComponent *player_fall_component = fallLookUp(global_entities.fallComponents, global_entities.entities[player_entity_count].EntityID);
+  global_ui_style.PlayerDebugFallInformation = player_fall_component;
 
   u32 horse_entity_count = add_entity(&global_entities, v2{60, 42}, spawn_location, IDLE);
   AddHealthComponent(global_entities.HealthComponents, global_entities.entities[horse_entity_count].EntityID, 400);
-
-  b32 profilerToggle = false;
-  b32 playerUIToggle = true;
 
   f32 Gravity = 9.8;
   f32 OneSecond = 0;
@@ -206,13 +206,6 @@ int main() {
 
     if (IsKeyPressed(KEY_F1)) {
       follow = !follow;
-    }
-
-    if (IsKeyPressed(KEY_F2)) {
-      profilerToggle = !profilerToggle;
-    }
-    if (IsKeyPressed(KEY_F3)) {
-      playerUIToggle = !playerUIToggle;
     }
 
     if (IsKeyPressed(KEY_TAB)) {
@@ -283,6 +276,15 @@ int main() {
           }
         }
       }
+    }
+
+    // TODO[UI]: This could be fixed with UI just tracking itself. Right now this is just
+    // so much badness.
+    
+    if (player_health_component->Damage > 0) {
+      player_health_component->Health -= player_health_component->Damage;
+      player_health_component->Damage = 0;
+      global_ui_style.Dirty = true;
     }
 
     v2 render_distance = {256, 256};
@@ -405,8 +407,7 @@ int main() {
     
 
       EndMode2D();
-      DrawText(TextFormat("Fall Velocity %f", global_entities.entities[player_entity_count].velocity.y), 0, 0, 20, WHITE);
-      DrawUI(&global_ui_style, UI_texture, profilerToggle, playerUIToggle);
+      DrawUI(&global_ui_style, UI_texture);
     // TODO: Put this in the DebugUI.
     
     #if 0
