@@ -26,12 +26,16 @@ struct Inventory_information {
   u32 Size = 64;
 
   Inventory_storage storage[MAX_INVENTORY_SLOTS];
+
+  b32 dirty;
 };
 
 struct Cursor_inventory_information {
   // The cursor inventory slot likes to be a different size.
   jam_rect2 dest_rect;
   Inventory_storage storage;
+
+  b32 dirty;
 };
 
 void take_from_slot(Inventory_storage *From, Inventory_storage *To) {

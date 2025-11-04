@@ -22,10 +22,7 @@ enum entity_states {
 
 struct healthComponent {
   u32 EntityID;
-
   s32 Health;
-
-  s32 Damage;
 
   u32 EffectFlags;
 };
@@ -165,7 +162,6 @@ bool DeleteHealthComponent(healthComponent *HealthComponents, u32 ID) {
     if (ID == HealthComponents[trying].EntityID) {
       HealthComponents[trying].EntityID = 0;
       HealthComponents[trying].Health = 0;
-      HealthComponents[trying].Damage = 0;
       return true;
     }
   }
@@ -314,9 +310,7 @@ static v2 generate_delta_movement(total_entities *global_entities, entity *Entit
             }
 
             if (totalFallDistance > 25) {
-              // TODO[ECS]: Damage might not be a thing that is tracked 
-              // unless the UI just uses it as a thing to set the dirty flag.
-              storedHealthComponent->Damage += 1.2 * (totalFallDistance - 25);
+              storedHealthComponent->Health -= 1.2 * (totalFallDistance - 25);
             }
             
         }

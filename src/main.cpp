@@ -78,17 +78,24 @@ int main() {
 
   s32 LightMaploc = GetShaderLocation(testShader, "texture1");
   f32 LightFallOff = 0.9f;
-  UI_ASSETS global_ui_style = {};
+
+  Inventory_UI_data invData = {};
+  Entity_UI_data entityData = {};
+
+  Entity_UI_snapshot prevElements = {};
+  entityData.prevElements = prevElements;
 
   Inventory_information storageInventory = {};
   storageInventory.DisplaySlots = 8;
   storageInventory.Row = 8;
   storageInventory.Size = 64;
+  storageInventory.dirty = true;
 
   Inventory_information playerInventory = {};
   playerInventory.DisplaySlots = 8;
   playerInventory.Row = 8;
   playerInventory.Size = 64;
+  playerInventory.dirty = true;
 
   playerInventory.storage[0].HasItem = true;
   playerInventory.storage[0].item_in_me.AtlasIndex = 0;
@@ -111,16 +118,13 @@ int main() {
   // FIXME: Boss information is not set. Sort of intentional.
   // FIXME: Terrible player naming badness change it to use an entity component of health.
   
-  global_ui_style.storageInventory = &storageInventory;
-  global_ui_style.playerInventory = &playerInventory;
-  global_ui_style.cursor = &global_cursor;
-
-
-  global_ui_style.Dirty = true;
+  invData.storageInventory = &storageInventory;
+  invData.playerInventory = &playerInventory;
+  invData.cursor = &global_cursor;
 
   // this will have to get a lot smarter in the future.
-  global_ui_style.item_icons = LoadTexture("../assets/itemsheet.png");
-  SetTextureFilter(global_ui_style.item_icons, TEXTURE_FILTER_POINT);
+  invData.item_icons = LoadTexture("../assets/itemsheet.png");
+  SetTextureFilter(invData.item_icons, TEXTURE_FILTER_POINT);
 
   world global_world = {0};
   global_world.Width = 500;
@@ -181,13 +185,12 @@ int main() {
   // this is not an operation that is done often.
   
   healthComponent *player_health_component = HealthLookUp(global_entities.HealthComponents, global_entities.entities[player_entity_count].EntityID);
-  global_ui_style.PlayerInformation = player_health_component;
-
-  fallComponent *player_fall_component = fallLookUp(global_entities.fallComponents, global_entities.entities[player_entity_count].EntityID);
-  global_ui_style.PlayerDebugFallInformation = player_fall_component;
+  entityData.playerHealthInformation = player_health_component;
 
   u32 horse_entity_count = add_entity(&global_entities, v2{60, 42}, spawn_location, IDLE);
   AddHealthComponent(global_entities.HealthComponents, global_entities.entities[horse_entity_count].EntityID, 400);
+
+  entityData.prevElements = {0, entityData.playerHealthInformation};
 
   f32 Gravity = 9.8;
   f32 OneSecond = 0;
@@ -211,12 +214,9 @@ int main() {
     if (IsKeyPressed(KEY_TAB)) {
       if (playerInventory.DisplaySlots != 8) {
         playerInventory.DisplaySlots = 8;
-        global_ui_style.Dirty = true;       
       } else {
         playerInventory.DisplaySlots = 40;
-        global_ui_style.Dirty = true;       
       }
-      
     }
 
     if (follow) {
@@ -244,8 +244,8 @@ int main() {
 
     global_cursor.MousePosition = MousePos;
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-      for (u32 i = 0; i < global_ui_style.player_collision_count; i++) {
-        if (PointInRect(global_ui_style.playerInvCollision[i], MousePos)) {
+      for (u32 i = 0; i < invData.player_collision_count; i++) {
+        if (PointInRect(invData.playerInvCollision[i], MousePos)) {
           // Should this also be an inventory function. The line / between UI rendering and logic is hard to make a direct boundary.
           // Respect my boundaries bro.
           // Also right now this is unneeded indirection added for seemingly no benefit. Some benefit in now that I can edit the memory of the inventory out side of UI interaction.
@@ -255,14 +255,14 @@ int main() {
             take_from_slot(&global_cursor.Inventory.storage, &playerInventory.storage[i]);
           }
             
-          global_ui_style.Dirty = true;
+          playerInventory.dirty = true;
         }
       }
 
       // TODO: Collapse this
-      if (global_ui_style.storage_collision_count) {
-        for (u32 i = 0; i < global_ui_style.storage_collision_count; i++) {
-          if (PointInRect(global_ui_style.StorageInvCollision[i], MousePos)) {
+      if (invData.storage_collision_count) {
+        for (u32 i = 0; i < invData.storage_collision_count; i++) {
+          if (PointInRect(invData.StorageInvCollision[i], MousePos)) {
 
             if (!global_cursor.Inventory.storage.HasItem) {
               take_from_slot(&storageInventory.storage[i], &global_cursor.Inventory.storage);
@@ -271,20 +271,11 @@ int main() {
               take_from_slot(&global_cursor.Inventory.storage, &storageInventory.storage[i]);
             }
               
-            global_ui_style.Dirty = true;
+            storageInventory.dirty = true;
 
           }
         }
       }
-    }
-
-    // TODO[UI]: This could be fixed with UI just tracking itself. Right now this is just
-    // so much badness.
-    
-    if (player_health_component->Damage > 0) {
-      player_health_component->Health -= player_health_component->Damage;
-      player_health_component->Damage = 0;
-      global_ui_style.Dirty = true;
     }
 
     v2 render_distance = {256, 256};
@@ -407,7 +398,7 @@ int main() {
     
 
       EndMode2D();
-      DrawUI(&global_ui_style, UI_texture);
+      DrawUI(&invData, &entityData, UI_texture);
     // TODO: Put this in the DebugUI.
     
     #if 0
