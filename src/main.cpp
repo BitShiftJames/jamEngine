@@ -20,6 +20,21 @@
 
 #include <string.h>
 
+struct CursorObject {
+  Rectangle layer1;
+  Rectangle layer2;
+  Rectangle layer3;
+
+  // TODO: Settings.
+  Color layer1Tint = {0, 0, 0, 255};
+  Color layer2Tint = {255, 255, 255, 255};
+  Color layer3Tint = {100, 0, 0, 255};
+
+  Texture2D texture;
+
+  Cursor_inventory_information Inventory;
+};
+
 int main() {
   u32 flags = FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT;// FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED;
   SetConfigFlags(flags);
@@ -75,9 +90,7 @@ int main() {
 
   s32 RenderMinimumLoc = GetShaderLocation(testShader, "renderMinimum");
   s32 RenderMaximumLoc = GetShaderLocation(testShader, "renderMaximum");
-
   s32 LightMaploc = GetShaderLocation(testShader, "texture1");
-  f32 LightFallOff = 0.9f;
 
   Inventory_UI_data invData = {};
   Entity_UI_data entityData = {};
@@ -103,7 +116,7 @@ int main() {
   playerInventory.storage[0].item_in_me.SourceRect = JamRectMinDim(v2{0, 0}, v2{16, 16});
   
   // TODO: Scope this.
-  CURSOR_OBJECT global_cursor = {};
+  CursorObject global_cursor = {};
   global_cursor.texture = LoadTexture("../assets/Cursor.png");
 
   global_cursor.layer1 = {0, 0, (f32)global_cursor.texture.width, (f32)((u32)(global_cursor.texture.height / 3))};
@@ -112,15 +125,10 @@ int main() {
 
   Cursor_inventory_information CursorInventory = {};
   CursorInventory.dest_rect = JamRectMinDim(v2{0, 0}, v2{16, 16});
-
   global_cursor.Inventory = CursorInventory;
 
-  // FIXME: Boss information is not set. Sort of intentional.
-  // FIXME: Terrible player naming badness change it to use an entity component of health.
-  
   invData.storageInventory = &storageInventory;
   invData.playerInventory = &playerInventory;
-  invData.cursor = &global_cursor;
 
   // this will have to get a lot smarter in the future.
   invData.item_icons = LoadTexture("../assets/itemsheet.png");
@@ -242,7 +250,6 @@ int main() {
     MousePos.x -= CURSOR_HALF_SIDE;
     MousePos.y -= CURSOR_HALF_SIDE;
 
-    global_cursor.MousePosition = MousePos;
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       for (u32 i = 0; i < invData.player_collision_count; i++) {
         if (PointInRect(invData.playerInvCollision[i], MousePos)) {
@@ -401,6 +408,18 @@ int main() {
       DrawUI(&invData, &entityData, UI_texture);
     // TODO: Put this in the DebugUI.
     
+    DrawTextureRec(global_cursor.texture, global_cursor.layer1, MousePos, global_cursor.layer1Tint);
+    DrawTextureRec(global_cursor.texture, global_cursor.layer2, MousePos, global_cursor.layer2Tint);
+    DrawTextureRec(global_cursor.texture, global_cursor.layer3, MousePos, global_cursor.layer3Tint);
+
+    if (global_cursor.Inventory.storage.HasItem) {
+      Rectangle destRect = Rectangle{ MousePos.x - global_cursor.Inventory.dest_rect.Max.x, 
+                                      MousePos.y - global_cursor.Inventory.dest_rect.Max.y, 
+                                      global_cursor.Inventory.dest_rect.Max.x * 2, 
+                                      global_cursor.Inventory.dest_rect.Max.y * 2};
+      DrawTexturePro(invData.item_icons, JamToRayRect(global_cursor.Inventory.storage.item_in_me.SourceRect), destRect, Vector2{0, 0}, 0.0f, WHITE);
+    }
+
     #if 0
       DrawText(TextFormat("Light Texture Look up: %i", lightLookat), 19, 10, 20, WHITE);
       DrawRectangle(17, 37, LightTextureDim + 6, LightTextureDim + 6, WHITE);

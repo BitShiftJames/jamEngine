@@ -20,30 +20,11 @@
 #define HEALTH_SLOTS 40
 #define HALF_HEALTH_SLOTS 20
 
-struct CURSOR_OBJECT {
-  Vector2 MousePosition;
-
-  Rectangle layer1;
-  Rectangle layer2;
-  Rectangle layer3;
-
-  // TODO: Settings.
-  Color layer1Tint = {0, 0, 0, 255};
-  Color layer2Tint = {255, 255, 255, 255};
-  Color layer3Tint = {100, 0, 0, 255};
-
-  Texture2D texture;
-
-  Cursor_inventory_information Inventory;
-};
 
 // untracked things will typically have collision and be something that is harder to track from frame to frame.
 // like inventory data.
 
 struct Inventory_UI_data {
-
-  CURSOR_OBJECT *cursor;
-
   Inventory_information *playerInventory;
   Inventory_information *storageInventory;
 
@@ -85,7 +66,7 @@ void DrawUI(Inventory_UI_data *invData , Entity_UI_data *entityData, RenderTextu
       entityData->playerHealthInformation 
     };
 
-    if (health_change || effect_change || invData->playerInventory->dirty || invData->storageInventory->dirty || invData->cursor->Inventory.dirty) {
+    if (health_change || effect_change || invData->playerInventory->dirty || invData->storageInventory->dirty) {
       BeginTextureMode(UI_texture);
         invData->player_collision_count = 0;
         invData->storage_collision_count = 0;
@@ -130,7 +111,6 @@ void DrawUI(Inventory_UI_data *invData , Entity_UI_data *entityData, RenderTextu
         
       invData->storageInventory->dirty = false;
       invData->playerInventory->dirty = false;
-      invData->cursor->Inventory.dirty = false;
 
       EndTextureMode();
     }
@@ -141,16 +121,5 @@ void DrawUI(Inventory_UI_data *invData , Entity_UI_data *entityData, RenderTextu
   // Cause it would be nice to just make one texture for the cursor and only update it if the setting is changed.
   // and then layer that with the item data or something.
   
-  DrawTextureRec(invData->cursor->texture, invData->cursor->layer1, invData->cursor->MousePosition, invData->cursor->layer1Tint);
-  DrawTextureRec(invData->cursor->texture, invData->cursor->layer2, invData->cursor->MousePosition, invData->cursor->layer2Tint);
-  DrawTextureRec(invData->cursor->texture, invData->cursor->layer3, invData->cursor->MousePosition, invData->cursor->layer3Tint);
-
-  if (invData->cursor->Inventory.storage.HasItem) {
-    Rectangle destRect = Rectangle{ invData->cursor->MousePosition.x - invData->cursor->Inventory.dest_rect.Max.x, 
-                                    invData->cursor->MousePosition.y - invData->cursor->Inventory.dest_rect.Max.y, 
-                                    invData->cursor->Inventory.dest_rect.Max.x * 2, 
-                                    invData->cursor->Inventory.dest_rect.Max.y * 2};
-    DrawTexturePro(invData->item_icons, JamToRayRect(invData->cursor->Inventory.storage.item_in_me.SourceRect), destRect, Vector2{0, 0}, 0.0f, WHITE);
-  }
 }
 #endif
