@@ -15,6 +15,8 @@ src/jamDebug.cpp
 *.vcxproj.user
 *.VC.db
 *.VC.opendb
+*.otf
+*.ttf
 
 CMakeFiles/
 CMakeCache.txt

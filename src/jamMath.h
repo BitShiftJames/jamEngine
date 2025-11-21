@@ -38,6 +38,24 @@ u16 jamClamp_u16(u16 x, u16 low, u16 high) {
   return x > high ? high : (x < low ? low : x);
 }
 
+// Alpha is default to max.
+static inline u16 packR4G4B4AF(u16 r, u16 g, u16 b) {
+  u16 Result = (jamClamp_u16(r, 0, 15) << 12) | 
+               (jamClamp_u16(g, 0, 15) << 8) | 
+               (jamClamp_u16(b, 0, 15) << 4) | 15; 
+
+  return Result;
+}
+
+static inline u16 packR4G4B4A4(u16 r, u16 g, u16 b, u16 a) {
+  u16 Result = (jamClamp_u16(r, 0, 15) << 12) | 
+               (jamClamp_u16(g, 0, 15) << 8) | 
+               (jamClamp_u16(b, 0, 15) << 4) |
+               (jamClamp_u16(a, 0, 15)); 
+
+  return Result;
+}
+
 #define JAMRAND_MAX 0xFFFFFFFF
 
 #define Rand() ((u32)GetRandomValue(0, JAMRAND_MAX))

@@ -13,9 +13,7 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
-#define CURSOR_SIDE 32
-#define CURSOR_HALF_SIDE 16
-
+#if 0
 #define MAX_HEALTH 400
 #define HEALTH_SLOTS 40
 #define HALF_HEALTH_SLOTS 20
@@ -94,7 +92,6 @@ void DrawUI(Inventory_UI_data *invData , Entity_UI_data *entityData, RenderTextu
           Rectangle destRect = {(f32)(-(slotX * (invData->playerInventory->Size * 1.2)) + (GetScreenWidth() - 80)), (f32)(slotY * (invData->playerInventory->Size * 1.2) + 200), 
                                 (f32)invData->playerInventory->Size, (f32)invData->playerInventory->Size};
           DrawRectangleRounded(destRect, .3f, 10, Color{100, 0, 255, 128});
-          // USELESS FUCKING LSP.
           invData->StorageInvCollision[invData->storage_collision_count++] = JamRectMinDim(destRect);
           if (invData->storageInventory->storage[i].HasItem) {
 
@@ -122,4 +119,45 @@ void DrawUI(Inventory_UI_data *invData , Entity_UI_data *entityData, RenderTextu
   // and then layer that with the item data or something.
   
 }
+#endif
+
+struct Buttons {
+  jam_rect2 dim;
+
+  Color text_color;
+  Color hover_color;
+
+  s32 size;
+  char *text;
+
+  void (*callback)(void *userdata);
+  void *userdata;
+  u32 menu_change;
+};
+
+struct File_box {
+  jam_rect2 dim;
+
+  Color text_color;
+  Color hover_color;
+  Color deletion_color;
+
+  b32 deletion_flag;
+
+  s32 size;
+  char *text;
+  char *file_path;
+};
+
+struct Text_box {
+  Color text_color;
+
+  v2 pos;
+
+  b32 deletion_flag;
+
+  s32 size;
+  char *text;
+};
+
 #endif

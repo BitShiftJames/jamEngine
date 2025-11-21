@@ -242,7 +242,7 @@ static jam_rect2 collision_rect_construction(jam_rect2 A, world global_world) {
     jam_rect2 TileRect = {};
     for (u32 TileY = MinTileY; TileY <= MaxTileY; TileY++) {
       for (u32 TileX = MinTileX; TileX <= MaxTileX; TileX++) {
-        tile CurrentTile = getTile(global_world, TileX, TileY);
+        tile CurrentTile = getTile(&global_world, TileX, TileY);
         if (CurrentTile.type != 0) {
           jam_rect2 current_tile_rectangle = JamRectMinDim(v2{(f32)TileX * global_world.TileSize, (f32)TileY * global_world.TileSize}, global_world.TileSize);
 
@@ -266,7 +266,6 @@ static jam_rect2 collision_rect_construction(jam_rect2 A, world global_world) {
 // TODO[ECS]: Do something smarter here instead of having to pass global_entities in everywhere.
 static v2 generate_delta_movement(total_entities *global_entities, entity *Entity, world global_world, f32 deltaTime) {
 
-  TIMED_BLOCK();
   v2 Result = {};
   
   f32 padding = 1;

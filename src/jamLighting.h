@@ -40,23 +40,6 @@ u8 u16Valuestou32Values[16] = {
   255,
 };
 
-// Alpha is default to max.
-static inline u16 packR4G4B4AF(u16 r, u16 g, u16 b) {
-  u16 Result = (jamClamp_u16(r, 0, 15) << 12) | 
-               (jamClamp_u16(g, 0, 15) << 8) | 
-               (jamClamp_u16(b, 0, 15) << 4) | 15; 
-
-  return Result;
-}
-
-static inline u16 packR4G4B4A4(u16 r, u16 g, u16 b, u16 a) {
-  u16 Result = (jamClamp_u16(r, 0, 15) << 12) | 
-               (jamClamp_u16(g, 0, 15) << 8) | 
-               (jamClamp_u16(b, 0, 15) << 4) |
-               (jamClamp_u16(a, 0, 15)); 
-
-  return Result;
-}
 
 static inline unpackedR4G4B4A4 unpackR4G4B4A4(u16 color) {
   unpackedR4G4B4A4 Result = {};
@@ -94,10 +77,8 @@ static inline void setLightValue(jamColor *imageValues, u32 LightTextureDim, jam
 }
 
 static void InjectLighting(jamColor *injectValues, world global_world, total_entities global_entities, jam_rect2 render_rectangle, u32 LightTextureDim) {
-  TIMED_BLOCK();
   for (u32 LightMapY = 0; LightMapY < LightTextureDim; LightMapY++) {
     for (u32 LightMapX = 0; LightMapX < LightTextureDim; LightMapX++) {
-      TIMED_BLOCK();
       u32 TileLightX = (u32)render_rectangle.Min.x + LightMapX;
       u32 TileLightY = (u32)render_rectangle.Min.y + LightMapY;
 
@@ -117,12 +98,10 @@ static void InjectLighting(jamColor *injectValues, world global_world, total_ent
 }
 
 static void PropagateLighting(jamColor *prevValues, jamColor *nextValues, u32 LightTextureDim) {
-  TIMED_BLOCK();
   s32 LightFallOff = 15;
 
   for (s32 LightMapY = 0; LightMapY < LightTextureDim; LightMapY++) {
     for (s32 LightMapX = 0; LightMapX < LightTextureDim; LightMapX++) {
-      TIMED_BLOCK();
       u32 middleIndex = LightMapY * LightTextureDim + LightMapX;
       jamColor currentLight = prevValues[middleIndex];
 

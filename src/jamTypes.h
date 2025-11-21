@@ -4,11 +4,13 @@
 // TODO: Get rid of C standard library? looked through the header and can't read how to actually set these myself.
 #include <stdint.h>
 
-#include <math.h>
-
 #define Minimum(a, b) ((a) < (b) ? (a) : (b))
 #define Maximum(a, b) ((a) > (b) ? (a) : (b))
 #define ArrayCount(Array) (sizeof(Array) / sizeof(Array[0]))
+
+#define Kilobytes(number) ((number) * 1024ull)
+#define Megabytes(number) (Kilobytes(number) * 1024ull)
+#define Gigabytes(number) (Megabytes(number) * 1024ull)
 
 #define jamLIGHTDEBUB_ 0
 #define jamMEMORYHOG_ 1
@@ -228,5 +230,41 @@ static inline jam_rect2 JamRectMinMax(v2 Min, v2 Max) {
 
   return Result;
 }
+
+
+struct memoryArena {
+  u32 Size;
+  u32 Used;
+
+  void *memory;
+};
+
+static void *
+_PushSize(memoryArena *arena, size_t size) {
+  u8 *result = 0;
+  if (arena->Used + size < arena->Size) {
+    result = (u8 *)arena->memory + arena->Used;
+
+    arena->Used += size;
+
+    return (void *)result;
+  }
+
+  return (void *)result;
+}
+
+#define PushSize(arena, size) _PushSize((arena), (size))
+#define PushArray(arena, count, type)                                          \
+  (type *)PushSize(arena, (count) * sizeof(type))
+#define PushStruct(arena, type) (type *)PushSize((arena), sizeof(type))
+
+#if 1  
+#define Assert(expression)                                                     \
+  if(!(expression)) {                                                          \
+    *(int *)0 = 0;                                                             \
+  }
+#else
+#define Assert() (*(int *)0 = 0)
+#endif
 
 #endif

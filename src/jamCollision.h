@@ -3,8 +3,8 @@
 
 #include "jamTypes.h"
 #include "jamMath.h"
-// fuck windows
-inline b32 PointInRect(jam_rect2 A, Vector2 Point) {
+
+inline b32 PointInRect(jam_rect2 A, v2 Point) {
   b32 withinX = Point.x > A.x && Point.x < A.Max.x;
   b32 withinY = Point.y > A.y && Point.y < A.Max.y;
   
