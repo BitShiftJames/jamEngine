@@ -5,6 +5,8 @@
 
 #include <cstring>
 
+#define MAX_FILE_PATH 1024
+
 void ClearAnArena(memoryArena *arena) {
   memset(arena->memory, 0, arena->Used);
   arena->Used = 0;
@@ -13,13 +15,17 @@ void ClearAnArena(memoryArena *arena) {
 struct Scene;
 struct Scene {
   void (*update)(struct Scene *self);
-  void (*render)(struct Scene *self); // Generalize cursor init and just have it created on scene start up.
+  void (*render)(struct Scene *self);
   void (*onEnter)(struct Scene *self);
   void (*onExit)(struct Scene *self);
 
   void *data;
 
   v2 MousePos;
+
+  char save_directory[1024];
+  char parent_directory[1024];
+
   memoryArena *arena;
 
   memoryArena *temp_arena;

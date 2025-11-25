@@ -5,10 +5,13 @@
 #include "jamCollision.h"
 #include "jamUI.h"
 
+
 #include <cstdlib>
 #include <cstring>
 
 #include "mainGameScene.cpp"
+
+#include "safe_delete.h"
 
 #define MAX_ID_COUNT 256
 
@@ -213,10 +216,20 @@ static inline void Reconstruct_Start_Menu(Scene *self, mainmenu_data *menuData) 
   }
 }
 
+static void DeleteAFile(char *file_path) {
+  s32 Length = TextLength(file_path);
+  if (Length < MAX_FILE_PATH - 1) {
+    file_path[Length + 1] = '\0';
+    recycle_delete(file_path);
+  } else {
+    // Fail due to running out of space.
+  }
+}
+
 static void mainMenu_update(struct Scene *self) {
   mainmenu_data *menuData = (mainmenu_data *)self->data;
 
-  FilePathList checkList = LoadDirectoryFiles("..\\saves");
+  FilePathList checkList = LoadDirectoryFiles(self->save_directory);
   b32 change_in_file_path = false;
 
   if (checkList.count != menuData->list.count) {
@@ -258,7 +271,7 @@ static void mainMenu_update(struct Scene *self) {
       if (PointInRect(currFile_box->dim, self->MousePos) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         if (menuData->delete_mode) {
           // TODO[Polish]: Make it so you can do a mass selection of worlds and delete them all at once with one are you sure prompt?
-          FileRemove(currFile_box->file_path);
+          DeleteAFile(currFile_box->file_path);
           menuData->delete_mode = false;
         } else {
           StartPlaying(currFile_box);
@@ -342,7 +355,7 @@ static void mainMenu_onEnter(struct Scene *self) {
   menuData->uiData = PushArray(self->arena, menuData->ui_count, UI_data);
   menuData->menuChanges = PushArray(self->arena, menuData->ui_count, menuChange);
   
-  menuData->list = LoadDirectoryFiles("..\\saves");
+  menuData->list = LoadDirectoryFiles(self->save_directory);
 
   menuChange *mainMenuChange = &menuData->menuChanges[Main_menu];
   mainMenuChange->arg1 = menuData;

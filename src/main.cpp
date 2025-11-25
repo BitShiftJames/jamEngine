@@ -75,9 +75,23 @@ int main() {
   Temp_arena.memory = MemAlloc(Gigabytes(2));
   Temp_arena.Size = Gigabytes(2);
 
-  Scene currScene = {};
+  // these use static strings so might as well do it once and never again.
   
+  const char *working_directory = GetWorkingDirectory();
+  Scene currScene = {};
+  {
+    s32 count = 0;
+    char **split_text= TextSplit(working_directory, '\\', &count);
 
+    char *join_text = TextJoin(split_text, count - 1, "\\");
+    TextCopy(currScene.parent_directory, join_text);
+
+    s32 text_length = TextLength(join_text);
+    TextAppend(join_text, "\\saves", &text_length);
+    TextCopy(currScene.save_directory, join_text);
+
+  }
+  
   currScene.arena = &Scene_arena;
   currScene.temp_arena = &Temp_arena;
 
