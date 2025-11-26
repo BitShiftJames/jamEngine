@@ -22,6 +22,7 @@ struct Scene {
   void *data;
 
   v2 MousePos;
+  v2 ScreenSize;
 
   char save_directory[1024];
   char parent_directory[1024];

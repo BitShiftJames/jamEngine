@@ -57,48 +57,61 @@ struct menuChange {
 
 // TODO[UI]: Make hoverColor option.
 void push_buttons(UI_data *data, s32 size, char *text, v2 pos, Color textColor, Color hoverColor, 
-                  void (*callback)(void *userdata), void *userdata, b32 Deletion_flag = 0) {
-  if (data->buttons_count < ArrayCount(data->buttons)) {
-    data->buttons[data->buttons_count].size = size;
-    data->buttons[data->buttons_count].text = text;
-    data->buttons[data->buttons_count].text_color = textColor;
-    data->buttons[data->buttons_count].hover_color = hoverColor;
-    data->buttons[data->buttons_count].callback = callback;
-    data->buttons[data->buttons_count].userdata = userdata;
+                  void (*callback)(void *userdata), void *userdata, v2 ScreenSize) {
+  Assert(pos.x > 1.0f || pos.y > 1.0f)
 
-    data->buttons[data->buttons_count].dim.Min = pos;
-    data->buttons[data->buttons_count].dim.Max.x = pos.x + MeasureText(text, size);
-    data->buttons[data->buttons_count].dim.Max.y = pos.y + size;
+  if (data->buttons_count < ArrayCount(data->buttons)) {
+    Buttons *currButton = &data->buttons[data->buttons_count];
+
+    currButton->size = size;
+    currButton->text = text;
+    currButton->text_color = textColor;
+    currButton->hover_color = hoverColor;
+    currButton->callback = callback;
+    currButton->userdata = userdata;
+
+    currButton->dim.Min = pos * ScreenSize;
+    currButton->dim.Max.x = currButton->dim.Min.x + MeasureText(text, size);
+    currButton->dim.Max.y = currButton->dim.Min.y + size;
     
     data->buttons_count++;
   }
 }
 
-void push_file_box(UI_data *data, s32 size, v2 pos, char *text, char *file_path, Color textColor, Color hoverColor, Color DeletionColor) {
+void push_file_box(UI_data *data, s32 size, v2 pos, char *text, char *file_path, Color textColor, Color hoverColor, Color DeletionColor, v2 ScreenSize) {
+
+  Assert(pos.x > 1.0f || pos.y > 1.0f)
+
   if (data->file_count < ArrayCount(data->buttons)) {
+    File_box *currFile_box = &data->file_boxes[data->file_count];
 
-    data->file_boxes[data->file_count].text = text;
-    data->file_boxes[data->file_count].file_path = file_path;
-    data->file_boxes[data->file_count].size = size;
+    currFile_box->text = text;
+    currFile_box->file_path = file_path;
+    currFile_box->size = size;
 
-    data->file_boxes[data->file_count].text_color = textColor;
-    data->file_boxes[data->file_count].hover_color = hoverColor;
-    data->file_boxes[data->file_count].deletion_color = DeletionColor;
+    currFile_box->text_color = textColor;
+    currFile_box->hover_color = hoverColor;
+    currFile_box->deletion_color = DeletionColor;
 
-    data->file_boxes[data->file_count].dim.Min = pos;
-    data->file_boxes[data->file_count].dim.Max.x = pos.x + MeasureText(text, size);
-    data->file_boxes[data->file_count].dim.Max.y = pos.y + size;
+    currFile_box->dim.Min = pos * ScreenSize;
+    currFile_box->dim.Max.x = currFile_box->dim.Min.x + MeasureText(text, size);
+    currFile_box->dim.Max.y = currFile_box->dim.Min.y + size;
 
     data->file_count++;
   };
 };
 
-void push_text_box(UI_data *data, s32 size, char *text, v2 pos, Color textColor) {
+void push_text_box(UI_data *data, s32 size, char *text, v2 pos, Color textColor, v2 ScreenSize) {
+
+  Assert(pos.x > 1.0f || pos.y > 1.0f)
+
   if (data->text_box_count < ArrayCount(data->text_boxes)) {
-    data->text_boxes[data->text_box_count].size = size;
-    data->text_boxes[data->text_box_count].text = text;
-    data->text_boxes[data->text_box_count].pos = pos;
-    data->text_boxes[data->text_box_count].text_color = textColor;
+    Text_box *currText_box = &data->text_boxes[data->text_box_count];
+
+    currText_box->size = size;
+    currText_box->text = text;
+    currText_box->pos = pos * ScreenSize;
+    currText_box->text_color = textColor;
 
     data->text_box_count++;
   }
@@ -207,12 +220,13 @@ static inline void Reconstruct_Start_Menu(Scene *self, mainmenu_data *menuData) 
   for (u32 i = 0; i < menuData->list.count; i++) {
     push_file_box(startMenudata, 
                   40, // text size
-                  {(f32)GetScreenWidth() / 2, (f32)(GetScreenHeight() / 5) + (100.0f + (i * 40.0f))}, // position
+                  {0.5f, 0.3f + (i * .05f)}, // position
                   menuData->list.paths[i], // text
                   menuData->list.paths[i],  // file_path
                   WHITE, // text color
                   YELLOW, // hover color
-                  RED); // deletion color
+                  RED,
+                  self->ScreenSize); // deletion color
   }
 }
 
@@ -375,24 +389,24 @@ static void mainMenu_onEnter(struct Scene *self) {
 
 
   UI_data *mainMenudata = &menuData->uiData[Main_menu];
-  push_text_box(mainMenudata, 120, (char *)"Working-title", v2{20, 20}, WHITE);
-  push_text_box(mainMenudata, 60, (char *)"\"that works\"", v2{40, 140}, WHITE);
-  push_buttons(mainMenudata, 40, (char *)"Start", {(f32)20.0f, (f32)(GetScreenHeight() / 5)}, WHITE, YELLOW, ChangeMenu, startMenuChange);
-  push_buttons(mainMenudata, 40, (char *)"Setting", {(f32)20.0f, (f32)(GetScreenHeight() / 5) + 60.0f}, WHITE, YELLOW, ChangeMenu, settingChange);
-  push_buttons(mainMenudata, 40, (char *)"Tooling", {(f32)20.0f, (f32)(GetScreenHeight() / 5) + 120.0f}, WHITE, YELLOW, ChangeMenu, toolingChange);
-  push_buttons(mainMenudata, 40, (char *)"Quitting", {(f32)20.0f, (f32)(GetScreenHeight() / 5) + 200.0f}, WHITE, YELLOW, QuitIT, 0);
+  push_text_box(mainMenudata, 120, (char *)"Working-title", v2{.2f, .1f}, WHITE, self->ScreenSize);
+  push_text_box(mainMenudata, 60, (char *)"\"that works\"", v2{.25f, .22f}, WHITE, self->ScreenSize);
+  push_buttons(mainMenudata, 40, (char *)"Start", {.2f, .3f}, WHITE, YELLOW, ChangeMenu, startMenuChange, self->ScreenSize);
+  push_buttons(mainMenudata, 40, (char *)"Setting", {.2f, .4f}, WHITE, YELLOW, ChangeMenu, settingChange, self->ScreenSize);
+  push_buttons(mainMenudata, 40, (char *)"Tooling", {.2f, .5f}, WHITE, YELLOW, ChangeMenu, toolingChange, self->ScreenSize);
+  push_buttons(mainMenudata, 40, (char *)"Quitting", {.2f, .6f}, WHITE, YELLOW, QuitIT, 0, self->ScreenSize);
 
   UI_data *startMenudata = &menuData->uiData[Start_menu];
-  push_buttons(startMenudata, 40, (char *)"Create New World", {(f32)20.0f, (f32)(GetScreenHeight() / 5) + 100.0f}, WHITE, YELLOW, WorldGeneration, self);
-  push_buttons(startMenudata, 40, (char *)"Delete A World", {(f32)20.0f, (f32)(GetScreenHeight() / 5) + 140.0f}, WHITE, YELLOW, DeletionMode, menuData);
-  push_buttons(startMenudata, 40, (char *)"Back", {(f32)20.0f, (f32)(GetScreenHeight() / 5) + 180.0f}, WHITE, YELLOW, ChangeMenu, mainMenuChange);
+  push_buttons(startMenudata, 40, (char *)"Create New World", {.2f, .3f}, WHITE, YELLOW, WorldGeneration, self, self->ScreenSize);
+  push_buttons(startMenudata, 40, (char *)"Delete A World", {.2f, .34f}, WHITE, YELLOW, DeletionMode, menuData, self->ScreenSize);
+  push_buttons(startMenudata, 40, (char *)"Back", {.2f, .38f}, WHITE, YELLOW, ChangeMenu, mainMenuChange, self->ScreenSize);
   Reconstruct_Start_Menu(self, menuData);
 
   UI_data *settingsMenudata = &menuData->uiData[Setting_menu];
-  push_buttons(settingsMenudata, 40, (char *)"Back", {(f32)20.0f, (f32)(GetScreenHeight() / 5) + 180.0f}, WHITE, YELLOW, ChangeMenu, mainMenuChange);
+  push_buttons(settingsMenudata, 40, (char *)"Back", {.2f, .5f}, WHITE, YELLOW, ChangeMenu, mainMenuChange, self->ScreenSize);
 
   UI_data *toolingMenudata = &menuData->uiData[Tooling_menu];
-  push_buttons(toolingMenudata, 40, (char *)"Back", {20.0f, (f32)(GetScreenHeight() / 5) + 180.0f}, WHITE, YELLOW, ChangeMenu, mainMenuChange);
+  push_buttons(toolingMenudata, 40, (char *)"Back", {.2f, .5f}, WHITE, YELLOW, ChangeMenu, mainMenuChange, self->ScreenSize);
   
   self->data = menuData;
 }

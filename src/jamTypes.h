@@ -260,7 +260,7 @@ _PushSize(memoryArena *arena, size_t size) {
 
 #if 1  
 #define Assert(expression)                                                     \
-  if(!(expression)) {                                                          \
+  if((expression)) {                                                          \
     *(int *)0 = 0;                                                             \
   }
 #else

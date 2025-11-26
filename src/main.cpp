@@ -94,6 +94,14 @@ int main() {
   
   currScene.arena = &Scene_arena;
   currScene.temp_arena = &Temp_arena;
+  
+  {
+    Vector2 MousePos = GetMousePosition();
+    v2 mousePos = {MousePos.x, MousePos.y};
+
+    currScene.MousePos = mousePos;
+    currScene.ScreenSize = {(f32)GetScreenWidth(), (f32)GetScreenHeight()};
+  }
 
   InitScene(&currScene);
 
@@ -114,6 +122,7 @@ int main() {
     v2 mousePos = {MousePos.x, MousePos.y};
 
     currScene.MousePos = mousePos;
+    currScene.ScreenSize = {(f32)GetScreenWidth(), (f32)GetScreenHeight()};
 
     // TODO[Scenes]: At some point there should be a scene list.
     // Where you have things like a UI scene, Timing scene, and other such things.
