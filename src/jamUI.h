@@ -135,6 +135,8 @@ struct Buttons {
   u32 menu_change;
 };
 
+#define WORLD_NAME_MAX_CHAR_COUNT 512
+
 struct File_box {
   jam_rect2 dim;
 
@@ -145,7 +147,7 @@ struct File_box {
   b32 deletion_flag;
 
   s32 size;
-  char *text;
+  char text[WORLD_NAME_MAX_CHAR_COUNT];
   char *file_path;
 };
 

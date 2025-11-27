@@ -47,6 +47,10 @@ struct v2 {
   };
 };
 
+static inline v2 zero_vector(void) {
+    return v2{0};
+}
+
 struct jam_rect2 {
   union {
     struct {

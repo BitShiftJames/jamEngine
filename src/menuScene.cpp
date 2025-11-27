@@ -16,13 +16,32 @@
 #define MAX_ID_COUNT 256
 
 enum menus {
-  Main_menu = 0,
-  Start_menu,
-  Setting_menu,
-  Tooling_menu,
+  menu_main = 0,
+  menu_start,
+  menu_settings,
+  menu_tool,
+};
+
+enum container_types {
+  menu_flag_v_box = 0,
+  menu_flag_h_box,
+};
+
+enum menu_flags {
+  menu_flag_delete = (1 << 0),
+  menu_flag_container = (1 << 1),
+};
+
+struct container_information {
+  bool in_container;
+  u16 padding;
+  container_types container_type;
+  v2 container_pos;
 };
 
 struct UI_data {
+  container_information containerData;
+
   u32 buttons_count;
   Buttons buttons[32];
 
@@ -34,7 +53,8 @@ struct UI_data {
 };
 
 struct menuChange;
-// terrible_naming_scheme001.exe
+
+// TODO[Optimization]: Padding check. 
 struct mainmenu_data {
   u32 ui_count;
   s8 current_ui;
@@ -43,7 +63,7 @@ struct mainmenu_data {
   FilePathList list;
   menuChange *menuChanges;
 
-  b32 delete_mode;
+  bool delete_mode;
 };
 
 // I can't think of a way to do this with better scope.
@@ -69,10 +89,22 @@ void push_buttons(UI_data *data, s32 size, char *text, v2 pos, Color textColor, 
     currButton->hover_color = hoverColor;
     currButton->callback = callback;
     currButton->userdata = userdata;
+    
+    if (data->containerData.in_container) {
+      // FIXME: Container logic better also the button dimension code mix be collapse able.
+      currButton->dim.Min = data->containerData.container_pos;
+      currButton->dim.Max.x = currButton->dim.Min.x + MeasureText(text, size);
+      currButton->dim.Max.y = currButton->dim.Min.y + size;
 
-    currButton->dim.Min = pos * ScreenSize;
-    currButton->dim.Max.x = currButton->dim.Min.x + MeasureText(text, size);
-    currButton->dim.Max.y = currButton->dim.Min.y + size;
+      if (data->containerData.container_type == menu_flag_v_box) {
+        data->containerData.container_pos.y = currButton->dim.Max.y + data->containerData.padding;
+      } 
+
+    } else {
+      currButton->dim.Min = pos * ScreenSize;
+      currButton->dim.Max.x = currButton->dim.Min.x + MeasureText(text, size);
+      currButton->dim.Max.y = currButton->dim.Min.y + size;
+    }
     
     data->buttons_count++;
   }
@@ -85,17 +117,28 @@ void push_file_box(UI_data *data, s32 size, v2 pos, char *text, char *file_path,
   if (data->file_count < ArrayCount(data->buttons)) {
     File_box *currFile_box = &data->file_boxes[data->file_count];
 
-    currFile_box->text = text;
+    TextCopy(currFile_box->text, text);
     currFile_box->file_path = file_path;
     currFile_box->size = size;
 
     currFile_box->text_color = textColor;
     currFile_box->hover_color = hoverColor;
     currFile_box->deletion_color = DeletionColor;
+    
+    if (data->containerData.in_container) {
+      currFile_box->dim.Min = data->containerData.container_pos;
+      currFile_box->dim.Max.x = currFile_box->dim.Min.x + MeasureText(text, size);
+      currFile_box->dim.Max.y = currFile_box->dim.Min.y + size;
 
-    currFile_box->dim.Min = pos * ScreenSize;
-    currFile_box->dim.Max.x = currFile_box->dim.Min.x + MeasureText(text, size);
-    currFile_box->dim.Max.y = currFile_box->dim.Min.y + size;
+      if (data->containerData.container_type == menu_flag_v_box) {
+        data->containerData.container_pos.y = currFile_box->dim.Max.y + data->containerData.padding;
+      } 
+
+    } else {
+      currFile_box->dim.Min = pos * ScreenSize;
+      currFile_box->dim.Max.x = currFile_box->dim.Min.x + MeasureText(text, size);
+      currFile_box->dim.Max.y = currFile_box->dim.Min.y + size;
+    }
 
     data->file_count++;
   };
@@ -110,8 +153,12 @@ void push_text_box(UI_data *data, s32 size, char *text, v2 pos, Color textColor,
 
     currText_box->size = size;
     currText_box->text = text;
-    currText_box->pos = pos * ScreenSize;
     currText_box->text_color = textColor;
+
+    if (data->containerData.in_container) {
+    } else {
+      currText_box->pos = pos * ScreenSize;
+    }
 
     data->text_box_count++;
   }
@@ -212,21 +259,24 @@ void WorldGeneration(void *userData) {
 };
 
 static inline void Reconstruct_Start_Menu(Scene *self, mainmenu_data *menuData) {
-  UI_data *startMenudata = &menuData->uiData[Start_menu];
-  menuChange *mainMenuChange = &menuData->menuChanges[Main_menu];
+  UI_data *startMenudata = &menuData->uiData[menu_start];
+  menuChange *mainMenuChange = &menuData->menuChanges[menu_main];
   
   startMenudata->file_count = 0;
   // TODO[World Generation]: Implement
   for (u32 i = 0; i < menuData->list.count; i++) {
+
+
+    
     push_file_box(startMenudata, 
                   40, // text size
                   {0.5f, 0.3f + (i * .05f)}, // position
-                  menuData->list.paths[i], // text
+                  (char *)GetFileNameWithoutExt(menuData->list.paths[i]), // text
                   menuData->list.paths[i],  // file_path
                   WHITE, // text color
                   YELLOW, // hover color
-                  RED,
-                  self->ScreenSize); // deletion color
+                  RED, // deletion color
+                  self->ScreenSize); 
   }
 }
 
@@ -238,6 +288,17 @@ static void DeleteAFile(char *file_path) {
   } else {
     // Fail due to running out of space.
   }
+}
+
+static void StartContainer(UI_data *data, v2 pos, u16 padding, container_types container_type, v2 ScreenSize) {
+  data->containerData.in_container = true;
+  data->containerData.padding = padding;
+  data->containerData.container_pos = pos * ScreenSize;
+  data->containerData.container_type = container_type;
+}
+
+static void EndContainer(UI_data *data) {
+  data->containerData.in_container = false;
 }
 
 static void mainMenu_update(struct Scene *self) {
@@ -261,14 +322,12 @@ static void mainMenu_update(struct Scene *self) {
     Reconstruct_Start_Menu(self, menuData);
   }
 
-  // tiny function to inverse the if statement?
   s32 button_count = menuData->uiData[menuData->current_ui].buttons_count;
   if (button_count) {
     for (u32 i = 0; i < button_count; i++) {
       Buttons *currButton = &menuData->uiData[menuData->current_ui].buttons[i];
     
       if (PointInRect(currButton->dim, self->MousePos) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-
           if (currButton->callback) {
             currButton->callback(currButton->userdata);
           }
@@ -357,8 +416,8 @@ static void mainMenu_render(struct Scene *self) {
 
     }
   }
-  
 }
+
 static void mainMenu_onEnter(struct Scene *self) {
 
   memset(self->arena->memory, 0, self->arena->Size);
@@ -371,41 +430,47 @@ static void mainMenu_onEnter(struct Scene *self) {
   
   menuData->list = LoadDirectoryFiles(self->save_directory);
 
-  menuChange *mainMenuChange = &menuData->menuChanges[Main_menu];
+  menuChange *mainMenuChange = &menuData->menuChanges[menu_main];
   mainMenuChange->arg1 = menuData;
-  mainMenuChange->arg2 = (s8)Main_menu;
+  mainMenuChange->arg2 = (s8)menu_main;
 
-  menuChange *startMenuChange = &menuData->menuChanges[Start_menu];
+  menuChange *startMenuChange = &menuData->menuChanges[menu_start];
   startMenuChange->arg1 = menuData;
-  startMenuChange->arg2 = (s8)Start_menu;
+  startMenuChange->arg2 = (s8)menu_start;
 
-  menuChange *settingChange = &menuData->menuChanges[Setting_menu];
+  menuChange *settingChange = &menuData->menuChanges[menu_settings];
   settingChange->arg1 = menuData;
-  settingChange->arg2 = (s8)Setting_menu;
+  settingChange->arg2 = (s8)menu_settings;
 
-  menuChange *toolingChange = &menuData->menuChanges[Tooling_menu];
+  menuChange *toolingChange = &menuData->menuChanges[menu_tool];
   toolingChange->arg1 = menuData;
-  toolingChange->arg2 = (s8)Tooling_menu;
+  toolingChange->arg2 = (s8)menu_tool;
 
 
-  UI_data *mainMenudata = &menuData->uiData[Main_menu];
+  UI_data *mainMenudata = &menuData->uiData[menu_main];
   push_text_box(mainMenudata, 120, (char *)"Working-title", v2{.2f, .1f}, WHITE, self->ScreenSize);
   push_text_box(mainMenudata, 60, (char *)"\"that works\"", v2{.25f, .22f}, WHITE, self->ScreenSize);
-  push_buttons(mainMenudata, 40, (char *)"Start", {.2f, .3f}, WHITE, YELLOW, ChangeMenu, startMenuChange, self->ScreenSize);
-  push_buttons(mainMenudata, 40, (char *)"Setting", {.2f, .4f}, WHITE, YELLOW, ChangeMenu, settingChange, self->ScreenSize);
-  push_buttons(mainMenudata, 40, (char *)"Tooling", {.2f, .5f}, WHITE, YELLOW, ChangeMenu, toolingChange, self->ScreenSize);
-  push_buttons(mainMenudata, 40, (char *)"Quitting", {.2f, .6f}, WHITE, YELLOW, QuitIT, 0, self->ScreenSize);
 
-  UI_data *startMenudata = &menuData->uiData[Start_menu];
+  StartContainer(mainMenudata, {.2f, .3f}, 25, menu_flag_v_box, self->ScreenSize);
+  push_buttons(mainMenudata, 40, (char *)"Start", zero_vector(), WHITE, YELLOW, ChangeMenu, startMenuChange, self->ScreenSize);
+  push_buttons(mainMenudata, 40, (char *)"Setting", zero_vector(), WHITE, YELLOW, ChangeMenu, settingChange, self->ScreenSize);
+  push_buttons(mainMenudata, 40, (char *)"Tooling", zero_vector(), WHITE, YELLOW, ChangeMenu, toolingChange, self->ScreenSize);
+  push_buttons(mainMenudata, 40, (char *)"Quitting", zero_vector(), WHITE, YELLOW, QuitIT, 0, self->ScreenSize);
+  EndContainer(mainMenudata);
+
+  UI_data *startMenudata = &menuData->uiData[menu_start];
+  StartContainer(startMenudata, {.15f, .3f}, 25, menu_flag_v_box, self->ScreenSize);
   push_buttons(startMenudata, 40, (char *)"Create New World", {.2f, .3f}, WHITE, YELLOW, WorldGeneration, self, self->ScreenSize);
   push_buttons(startMenudata, 40, (char *)"Delete A World", {.2f, .34f}, WHITE, YELLOW, DeletionMode, menuData, self->ScreenSize);
   push_buttons(startMenudata, 40, (char *)"Back", {.2f, .38f}, WHITE, YELLOW, ChangeMenu, mainMenuChange, self->ScreenSize);
+  EndContainer(startMenudata);
+
   Reconstruct_Start_Menu(self, menuData);
 
-  UI_data *settingsMenudata = &menuData->uiData[Setting_menu];
+  UI_data *settingsMenudata = &menuData->uiData[menu_settings];
   push_buttons(settingsMenudata, 40, (char *)"Back", {.2f, .5f}, WHITE, YELLOW, ChangeMenu, mainMenuChange, self->ScreenSize);
 
-  UI_data *toolingMenudata = &menuData->uiData[Tooling_menu];
+  UI_data *toolingMenudata = &menuData->uiData[menu_tool];
   push_buttons(toolingMenudata, 40, (char *)"Back", {.2f, .5f}, WHITE, YELLOW, ChangeMenu, mainMenuChange, self->ScreenSize);
   
   self->data = menuData;
