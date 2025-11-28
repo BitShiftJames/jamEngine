@@ -34,35 +34,45 @@ struct Scene {
 };
 
 static Scene *global_curr_scene = 0;
+static Scene *global_aux_scene = 0;
 
-Scene *GetScene() {
+Scene *GetCurrScene() {
   if (global_curr_scene) {
     return global_curr_scene;
   }
   return 0;
 }
 
+Scene *GetAuxScene() {
+  if (global_aux_scene) {
+    return global_aux_scene;
+  }
+  return 0;
+}
+
 // Needs an init call because it's the engines job to keep the Scene memory alive.
-void InitScene(Scene *currScene) {
+void InitScene(Scene *currScene, Scene *auxScene) {
   global_curr_scene = currScene;
+  global_aux_scene = auxScene;
 };
 
+
 // Some solution to store the previous scene maybe a global.
-void SetScene(Scene *scene) {
-  Scene *currScene = GetScene();
-
-  if (currScene && currScene->onExit) {
-    currScene->onExit(currScene);
+void SetScene(Scene *globalScene, Scene *setScene) {
+  
+  if (globalScene->onExit) {
+    globalScene->onExit(globalScene);
   }
 
-  currScene->update = scene->update;
-  currScene->render = scene->render;
-  currScene->onEnter = scene->onEnter;
-  currScene->onExit = scene->onExit;
+  globalScene->update = setScene->update;
+  globalScene->render = setScene->render;
+  globalScene->onEnter = setScene->onEnter;
+  globalScene->onExit = setScene->onExit;
 
-  if (currScene && currScene->onEnter) {
-    currScene->onEnter(currScene);
+  if (globalScene->onEnter) {
+    globalScene->onEnter(globalScene);
   }
+
 }
 
 #endif // !JAM_SCENE_H

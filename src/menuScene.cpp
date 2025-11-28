@@ -22,35 +22,6 @@ enum menus {
   menu_tool,
 };
 
-enum container_types {
-  menu_flag_v_box = 0,
-  menu_flag_h_box,
-};
-
-enum menu_flags {
-  menu_flag_delete = (1 << 0),
-  menu_flag_container = (1 << 1),
-};
-
-struct container_information {
-  bool in_container;
-  u16 padding;
-  container_types container_type;
-  v2 container_pos;
-};
-
-struct UI_data {
-  container_information containerData;
-
-  u32 buttons_count;
-  Buttons buttons[32];
-
-  u32 file_count;
-  File_box file_boxes[32];
-
-  u32 text_box_count;
-  Text_box text_boxes[32];
-};
 
 struct menuChange;
 
@@ -75,94 +46,6 @@ struct menuChange {
   s8 arg2;
 };
 
-// TODO[UI]: Make hoverColor option.
-void push_buttons(UI_data *data, s32 size, char *text, v2 pos, Color textColor, Color hoverColor, 
-                  void (*callback)(void *userdata), void *userdata, v2 ScreenSize) {
-  Assert(pos.x > 1.0f || pos.y > 1.0f)
-
-  if (data->buttons_count < ArrayCount(data->buttons)) {
-    Buttons *currButton = &data->buttons[data->buttons_count];
-
-    currButton->size = size;
-    currButton->text = text;
-    currButton->text_color = textColor;
-    currButton->hover_color = hoverColor;
-    currButton->callback = callback;
-    currButton->userdata = userdata;
-    
-    if (data->containerData.in_container) {
-      // FIXME: Container logic better also the button dimension code mix be collapse able.
-      currButton->dim.Min = data->containerData.container_pos;
-      currButton->dim.Max.x = currButton->dim.Min.x + MeasureText(text, size);
-      currButton->dim.Max.y = currButton->dim.Min.y + size;
-
-      if (data->containerData.container_type == menu_flag_v_box) {
-        data->containerData.container_pos.y = currButton->dim.Max.y + data->containerData.padding;
-      } 
-
-    } else {
-      currButton->dim.Min = pos * ScreenSize;
-      currButton->dim.Max.x = currButton->dim.Min.x + MeasureText(text, size);
-      currButton->dim.Max.y = currButton->dim.Min.y + size;
-    }
-    
-    data->buttons_count++;
-  }
-}
-
-void push_file_box(UI_data *data, s32 size, v2 pos, char *text, char *file_path, Color textColor, Color hoverColor, Color DeletionColor, v2 ScreenSize) {
-
-  Assert(pos.x > 1.0f || pos.y > 1.0f)
-
-  if (data->file_count < ArrayCount(data->buttons)) {
-    File_box *currFile_box = &data->file_boxes[data->file_count];
-
-    TextCopy(currFile_box->text, text);
-    currFile_box->file_path = file_path;
-    currFile_box->size = size;
-
-    currFile_box->text_color = textColor;
-    currFile_box->hover_color = hoverColor;
-    currFile_box->deletion_color = DeletionColor;
-    
-    if (data->containerData.in_container) {
-      currFile_box->dim.Min = data->containerData.container_pos;
-      currFile_box->dim.Max.x = currFile_box->dim.Min.x + MeasureText(text, size);
-      currFile_box->dim.Max.y = currFile_box->dim.Min.y + size;
-
-      if (data->containerData.container_type == menu_flag_v_box) {
-        data->containerData.container_pos.y = currFile_box->dim.Max.y + data->containerData.padding;
-      } 
-
-    } else {
-      currFile_box->dim.Min = pos * ScreenSize;
-      currFile_box->dim.Max.x = currFile_box->dim.Min.x + MeasureText(text, size);
-      currFile_box->dim.Max.y = currFile_box->dim.Min.y + size;
-    }
-
-    data->file_count++;
-  };
-};
-
-void push_text_box(UI_data *data, s32 size, char *text, v2 pos, Color textColor, v2 ScreenSize) {
-
-  Assert(pos.x > 1.0f || pos.y > 1.0f)
-
-  if (data->text_box_count < ArrayCount(data->text_boxes)) {
-    Text_box *currText_box = &data->text_boxes[data->text_box_count];
-
-    currText_box->size = size;
-    currText_box->text = text;
-    currText_box->text_color = textColor;
-
-    if (data->containerData.in_container) {
-    } else {
-      currText_box->pos = pos * ScreenSize;
-    }
-
-    data->text_box_count++;
-  }
-}
 
 void QuitIT(void *userData) {
   exit(0);
@@ -188,7 +71,7 @@ void ChangeMenu(void *userData) {
 void StartPlaying(File_box *file) {
 
   // FIXME: Implict behavior. Have transitional memory.
-  Scene *currScene = GetScene();
+  Scene *currScene = GetCurrScene();
 
   File_box *temp_file_box = PushStruct(currScene->temp_arena, File_box);
 
@@ -201,8 +84,15 @@ void StartPlaying(File_box *file) {
   playScene.render = mainGame_render;
   playScene.onEnter = mainGame_onEnter;
   playScene.onExit = mainGame_onExit;
+  
+  Scene playUIscene = {};
+  playUIscene.update = mainGameUI_update;
+  playUIscene.render = mainGameUI_render;
+  playUIscene.onEnter = mainGameUI_onEnter;
+  playUIscene.onExit = mainGameUI_onExit;
 
-  SetScene(&playScene);
+  SetScene(GetAuxScene(), &playUIscene);
+  SetScene(currScene, &playScene);
 }
 
 void WorldGeneration(void *userData) {
@@ -290,16 +180,6 @@ static void DeleteAFile(char *file_path) {
   }
 }
 
-static void StartContainer(UI_data *data, v2 pos, u16 padding, container_types container_type, v2 ScreenSize) {
-  data->containerData.in_container = true;
-  data->containerData.padding = padding;
-  data->containerData.container_pos = pos * ScreenSize;
-  data->containerData.container_type = container_type;
-}
-
-static void EndContainer(UI_data *data) {
-  data->containerData.in_container = false;
-}
 
 static void mainMenu_update(struct Scene *self) {
   mainmenu_data *menuData = (mainmenu_data *)self->data;

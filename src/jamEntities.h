@@ -267,9 +267,9 @@ static jam_rect2 collision_rect_construction(jam_rect2 A, world global_world) {
 static v2 generate_delta_movement(total_entities *global_entities, entity *Entity, world global_world, f32 deltaTime) {
 
   v2 Result = {};
-  
-  f32 padding = 1;
   f32 drag_coefficent = 2.0f;
+  #if 0
+  f32 padding = 1;
   jam_rect2 ground_box = JamRectMinDim(v2{Entity->pos.x + padding, Entity->pos.y + (Entity->dim.y - padding)}, v2{Entity->dim.x - (padding * 2), 1.2});
   jam_rect2 tile_box = collision_rect_construction(ground_box, global_world);
 
@@ -318,7 +318,7 @@ static v2 generate_delta_movement(total_entities *global_entities, entity *Entit
       storedFallComponent->groundedLastFrame = true;
     }
   }
-  
+  #endif
   Entity->acceleration += -drag_coefficent * Entity->velocity;
   Result = (.5 * Entity->acceleration * (deltaTime * deltaTime)) + (Entity->velocity * deltaTime);
 
@@ -442,23 +442,23 @@ static void entity_ignore(entity *Entity, f32 inputStrength) {
 //   3. Either apply that delta movement directly to entity or apply it through collision_resolution_move.
 static void update_entity_loop(total_entities *global_entities, world global_world, f32 deltaTime, f32 OneSecond) {
   for (u8 entity_index = 0; entity_index < global_entities->entity_count; entity_index++) {
-    entity currentEntity = global_entities->entities[entity_index];
+    entity *currentEntity = &global_entities->entities[entity_index];
     f32 inputStrength = 250.0f;
-    global_entities->entities[entity_index].acceleration = {0, 0};
+    currentEntity->acceleration = {0, 0};
 
-    if (currentEntity.state && (OneSecond >= 1.0f)) {
+    if (currentEntity->state && (OneSecond >= 1.0f)) {
       global_entities->entities[entity_index].stateTime -= 1;
     }
 
-    switch (currentEntity.state) {
+    switch (currentEntity->state) {
         case IGNORE: {
-          entity_ignore(&global_entities->entities[entity_index], inputStrength);
+          entity_ignore(currentEntity, inputStrength);
         } break;
         case IDLE: {
-          entity_idle(&global_entities->entities[entity_index]);
+          entity_idle(currentEntity);
         } break;
         case WONDER: {
-          entity_wonder(&global_entities->entities[entity_index]);
+          entity_wonder(currentEntity);
         } break;
         case CHASE: {
         } break;
@@ -472,10 +472,12 @@ static void update_entity_loop(total_entities *global_entities, world global_wor
     // TODO[ECS]: When moving fully to an ECS based look it would be much easier to just be able to 
     // pass in an ID and then get all the needed information from the global entity data.
     //
-    v2 entity_movement_delta = generate_delta_movement(global_entities, &global_entities->entities[entity_index], global_world,
+    v2 entity_movement_delta = generate_delta_movement(global_entities, 
+                                                       currentEntity, 
+                                                       global_world,
                                                        deltaTime);
 
-    collision_resolution_for_move(&global_entities->entities[entity_index], global_world, 
+    collision_resolution_for_move(currentEntity, global_world, 
                                   entity_movement_delta, deltaTime);
 
   }

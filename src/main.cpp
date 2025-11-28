@@ -72,13 +72,32 @@ int main() {
   
   memoryArena Temp_arena = {};
   // different thread, maybe.
-  Temp_arena.memory = MemAlloc(Gigabytes(2));
-  Temp_arena.Size = Gigabytes(2);
+  Temp_arena.memory = MemAlloc(Gigabytes(1));
+  Temp_arena.Size = Gigabytes(1);
+
+  memoryArena Aux_arena = {};
+  Aux_arena.memory = MemAlloc(Megabytes(200));
+  Aux_arena.Size = Megabytes(200);
 
   // these use static strings so might as well do it once and never again.
   
   const char *working_directory = GetWorkingDirectory();
   Scene currScene = {};
+  Scene auxScene = {};
+
+  currScene.arena = &Scene_arena;
+  currScene.temp_arena = &Temp_arena;
+
+  auxScene.arena = &Aux_arena; 
+  auxScene.temp_arena = 0;
+  {
+    Vector2 MousePos = GetMousePosition();
+    v2 mousePos = {MousePos.x, MousePos.y};
+
+    currScene.MousePos = mousePos;
+    currScene.ScreenSize = {(f32)GetScreenWidth(), (f32)GetScreenHeight()};
+  }
+
   {
     s32 count = 0;
     char **split_text= TextSplit(working_directory, '\\', &count);
@@ -92,18 +111,8 @@ int main() {
 
   }
   
-  currScene.arena = &Scene_arena;
-  currScene.temp_arena = &Temp_arena;
-  
-  {
-    Vector2 MousePos = GetMousePosition();
-    v2 mousePos = {MousePos.x, MousePos.y};
 
-    currScene.MousePos = mousePos;
-    currScene.ScreenSize = {(f32)GetScreenWidth(), (f32)GetScreenHeight()};
-  }
-
-  InitScene(&currScene);
+  InitScene(&currScene, &auxScene);
 
   {
     Scene mainScene = {};
@@ -113,7 +122,7 @@ int main() {
     mainScene.update = mainMenu_update;
     mainScene.render = mainMenu_render;
   
-    SetScene(&mainScene);
+    SetScene(GetCurrScene(), &mainScene); 
   }
 
   while (!WindowShouldClose()) {
@@ -131,11 +140,19 @@ int main() {
       currScene.update(&currScene);
     }
 
+    if (auxScene.update) {
+      auxScene.update(&auxScene);
+    }
+
     BeginDrawing();
       
   
       if (currScene.render) {
         currScene.render(&currScene);
+      }
+
+      if (auxScene.render) {
+        auxScene.render(&auxScene);
       }
       
     EndDrawing();

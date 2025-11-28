@@ -3,8 +3,7 @@
 
 #include "jamTypes.h"
 
-#define MAX_INVENTORY_SLOTS 40
-#define HOT_BAR_SLOTS 8
+#define MAX_INVENTORY_SLOTS 45
 
 // Not inlined because it will be used for making a tool to make these item structs from item sheets.
 struct item {
@@ -20,7 +19,7 @@ struct Inventory_storage {
 };
 
 struct Inventory_information {
-  s32 Row = 8;
+  s32 Row = 9;
   s32 DisplaySlots;
   
   u32 Size = 64;
