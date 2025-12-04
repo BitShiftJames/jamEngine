@@ -1,17 +1,17 @@
 #include "raylib.h"
-#include "jamMath.h"
-#include "jamTypes.h"
-#include "jamScene.h"
-#include "jamCollision.h"
-#include "jamUI.h"
+#include "../jamLibrary/jamMath.h"
+#include "../jamLibrary/jamTypes.h"
+#include "../jamLibrary/jamScene.h"
+#include "../jamLibrary/jamCollision.h"
+#include "../jamLibrary/jamUI.h"
 
 
 #include <cstdlib>
 #include <cstring>
 
-#include "mainGameScene.cpp"
+#include "../jamScenes/mainGameScene.cpp"
 
-#include "safe_delete.h"
+#include "../safe_delete.h"
 
 #define MAX_ID_COUNT 256
 
@@ -326,6 +326,17 @@ static void mainMenu_onEnter(struct Scene *self) {
   toolingChange->arg1 = menuData;
   toolingChange->arg2 = (s8)menu_tool;
 
+  const char *working_directory = GetWorkingDirectory();
+
+  s32 count = 0;
+  char **split_text= TextSplit(working_directory, '\\', &count);
+
+  char *join_text = TextJoin(split_text, count - 1, "\\");
+  TextCopy(self->parent_directory, join_text);
+
+  s32 text_length = TextLength(join_text);
+  TextAppend(join_text, "\\saves", &text_length);
+  TextCopy(self->save_directory, join_text);
 
   UI_data *mainMenudata = &menuData->uiData[menu_main];
   push_text_box(mainMenudata, 120, (char *)"Working-title", v2{.2f, .1f}, WHITE, self->ScreenSize);

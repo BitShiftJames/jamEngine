@@ -1,27 +1,11 @@
-#include "jamCollision.h"
-#include "jamInventory.h"
-#include "jamMath.h"
-
-#include "menuScene.cpp"
-
-#define PERMISSION 0
-#if PERMISSION
-// a profiler from Handmade hero (Day 176-179). 
-// I got permission but I probably won't include it in the code still.
-#include "jamDebug.h"
-#else
-#define TIMED_BLOCK __noop
-#endif
+#include "jamLibrary/jamTypes.h"
+#include "jamLibrary/jamScene.h"
 
 #include "raylib.h"
 
-#include "jamTypes.h"
-#include "jamScene.h"
-
-// TODO[Scenes]: These need to be hot reloaded.
-
 #include <string.h>
 
+#if 0
 #define CURSOR_SIDE 32
 #define CURSOR_HALF_SIDE 16
 
@@ -39,9 +23,13 @@ struct CursorObject {
 
   Cursor_inventory_information Inventory;
 };
+#endif
 
-
-
+struct scene_table {
+  u32 scene_count;
+  char **scene_name;
+  char **scene_path;
+};
 int main() {
   u32 flags = FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT;// FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED;
   SetConfigFlags(flags);
@@ -54,6 +42,7 @@ int main() {
   s32 ScreenWidth = GetScreenWidth();
   s32 ScreenHeight = GetScreenHeight();
 
+  #if 0
   CursorObject global_cursor = {};
   global_cursor.texture = LoadTexture("../assets/Cursor.png");
 
@@ -61,99 +50,56 @@ int main() {
   global_cursor.layer2 = {0, CURSOR_SIDE, (f32)global_cursor.texture.width, (f32)((u32)(global_cursor.texture.height / 3))};
   global_cursor.layer3 = {0, CURSOR_SIDE * 2, (f32)global_cursor.texture.width, (f32)((u32)(global_cursor.texture.height / 3))};
 
-  Cursor_inventory_information CursorInventory = {};
+  Cursor_inventory_information CursorInventory = {};:
   CursorInventory.dest_rect = JamRectMinDim(v2{0, 0}, v2{16, 16});
   global_cursor.Inventory = CursorInventory;
-
-  memoryArena Scene_arena = {};
-  // different thread maybe.
-  Scene_arena.memory = MemAlloc(Gigabytes(2));
-  Scene_arena.Size = Gigabytes(2);
+  #endif
   
-  memoryArena Temp_arena = {};
-  // different thread, maybe.
-  Temp_arena.memory = MemAlloc(Gigabytes(1));
-  Temp_arena.Size = Gigabytes(1);
+  char *working_directory = (char *)GetWorkingDirectory();
 
-  memoryArena Aux_arena = {};
-  Aux_arena.memory = MemAlloc(Megabytes(200));
-  Aux_arena.Size = Megabytes(200);
-
-  // these use static strings so might as well do it once and never again.
-  
-  const char *working_directory = GetWorkingDirectory();
-  Scene currScene = {};
-  Scene auxScene = {};
-
-  currScene.arena = &Scene_arena;
-  currScene.temp_arena = &Temp_arena;
-
-  auxScene.arena = &Aux_arena; 
-  auxScene.temp_arena = 0;
   {
-    Vector2 MousePos = GetMousePosition();
-    v2 mousePos = {MousePos.x, MousePos.y};
-
-    currScene.MousePos = mousePos;
-    currScene.ScreenSize = {(f32)GetScreenWidth(), (f32)GetScreenHeight()};
+    int text_length = TextLength(working_directory);
+    TextAppend(working_directory, "\\jamScenes\\compiled_scenes", &text_length);
   }
 
-  {
-    s32 count = 0;
-    char **split_text= TextSplit(working_directory, '\\', &count);
+  FilePathList scenes = LoadDirectoryFiles(working_directory);
 
-    char *join_text = TextJoin(split_text, count - 1, "\\");
-    TextCopy(currScene.parent_directory, join_text);
+  memoryArena scene_memory = {};
+  scene_memory.memory = MemAlloc(Megabytes(200));
+  scene_memory.Size = Megabytes(200);
 
-    s32 text_length = TextLength(join_text);
-    TextAppend(join_text, "\\saves", &text_length);
-    TextCopy(currScene.save_directory, join_text);
+  u32 scene_count = 0;
+  scene_table sceneTable = {};
 
+  sceneTable.scene_path = PushArray(&scene_memory, 128, char *);
+  sceneTable.scene_name = PushArray(&scene_memory, 128, char *);
+
+  for (u32 i = 0; i < scenes.count; i++) {
+    if (IsFileExtension((scenes.paths[i]), ".dll") 
+        && !TextIsEqual(GetFileNameWithoutExt(scenes.paths[i]), "raylib")) {
+
+      s32 path_text_length = TextLength(scenes.paths[i]) + 1;
+      char *currPath = PushArray(&scene_memory, path_text_length, char);
+      
+      s32 scene_name_text_length = TextLength(GetFileNameWithoutExt(scenes.paths[i])) + 1;
+      char *scene_name_text = PushArray(&scene_memory, scene_name_text_length, char);
+
+
+      TextCopy(currPath, scenes.paths[i]);
+      TextCopy(scene_name_text, GetFileNameWithoutExt(scenes.paths[i]));
+
+      sceneTable.scene_name[sceneTable.scene_count] = scene_name_text;
+      sceneTable.scene_path[sceneTable.scene_count] = currPath;
+
+      sceneTable.scene_count++;
+    }
   }
   
 
-  InitScene(&currScene, &auxScene);
-
-  {
-    Scene mainScene = {};
-
-    mainScene.onEnter = mainMenu_onEnter;
-    mainScene.onExit = mainMenu_onExit;
-    mainScene.update = mainMenu_update;
-    mainScene.render = mainMenu_render;
-  
-    SetScene(GetCurrScene(), &mainScene); 
-  }
 
   while (!WindowShouldClose()) {
 
-    Vector2 MousePos = GetMousePosition();
-    v2 mousePos = {MousePos.x, MousePos.y};
-
-    currScene.MousePos = mousePos;
-    currScene.ScreenSize = {(f32)GetScreenWidth(), (f32)GetScreenHeight()};
-
-    // TODO[Scenes]: At some point there should be a scene list.
-    // Where you have things like a UI scene, Timing scene, and other such things.
-    // Unless I want the timers to async in which case I will need to do multi-threaded scene shannigans.
-    if (currScene.update) {
-      currScene.update(&currScene);
-    }
-
-    if (auxScene.update) {
-      auxScene.update(&auxScene);
-    }
-
     BeginDrawing();
-      
-  
-      if (currScene.render) {
-        currScene.render(&currScene);
-      }
-
-      if (auxScene.render) {
-        auxScene.render(&auxScene);
-      }
       
     EndDrawing();
     //
@@ -163,8 +109,3 @@ int main() {
   CloseWindow();
   return 0;
 }
-
-#if PERMISSION
-  debugRecords MainDebugRecords[__COUNTER__];
-  #include "jamDebug.cpp"
-#endif

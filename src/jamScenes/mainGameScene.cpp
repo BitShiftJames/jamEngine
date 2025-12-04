@@ -1,13 +1,12 @@
-#include "jamEntities.h"
-#include "jamInventory.h"
 #include "raylib.h"
-#include "jamTypes.h"
-#include "jamMath.h"
-#include "jamUI.h"
-#include "jamTiles.h"
-#include "jamScene.h"
-
-#include "jamLighting.h"
+#include "../jamLibrary/jamEntities.h"
+#include "../jamLibrary/jamInventory.h"
+#include "../jamLibrary/jamTypes.h"
+#include "../jamLibrary/jamMath.h"
+#include "../jamLibrary/jamUI.h"
+#include "../jamLibrary/jamTiles.h"
+#include "../jamLibrary/jamScene.h"
+#include "../jamLibrary/jamLighting.h"
 
 // TODO[Scene]: Timing scene or something.
 struct mainGame_data {

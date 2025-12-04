@@ -6,9 +6,13 @@ src/*.pdb
 src/*.out
 src/*.app
 src/*.dSYM/
+src/scene_build/
 src/jamDebug.h
 src/jamDebug.cpp
 
+src/jamScenes/compiled_scenes/
+
+*.pdb
 *.sln
 *.vcxproj
 *.vcxproj.filters
