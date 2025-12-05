@@ -2,16 +2,6 @@
 #define JAM_UI_H
 
 #include "jamTypes.h"
-#include "jamMath.h"
-#include "jamInventory.h"
-#include "jamCollision.h"
-
-// TODO: See if decoupling some components from jamEntities is worth it.
-#include "jamEntities.h"
-
-#include "raylib.h"
-#define RAYGUI_IMPLEMENTATION
-#include "raygui.h"
 
 #if 0
 #define MAX_HEALTH 400
@@ -204,6 +194,7 @@ static void Expand_container(container_information *container_info, v2 Max) {
   }
 }
 
+#if 0
 // TODO[UI]: Make hoverColor option.
 void push_buttons(UI_data *data, s32 size, char *text, v2 pos, Color textColor, Color hoverColor, 
                   void (*callback)(void *userdata), void *userdata, v2 ScreenSize) {
@@ -292,6 +283,6 @@ void push_text_box(UI_data *data, s32 size, char *text, v2 pos, Color textColor,
     data->text_box_count++;
   }
 }
-
+#endif
 
 #endif

@@ -1,3 +1,4 @@
+#if 0
 #include "raylib.h"
 #include "../jamLibrary/jamMath.h"
 #include "../jamLibrary/jamTypes.h"
@@ -9,9 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "../jamScenes/mainGameScene.cpp"
-
-#include "../safe_delete.h"
+#include "../platform_win32.h"
 
 #define MAX_ID_COUNT 256
 
@@ -79,20 +78,6 @@ void StartPlaying(File_box *file) {
 
   currScene->data = temp_file_box;
 
-  Scene playScene = {};
-  playScene.update = mainGame_update;
-  playScene.render = mainGame_render;
-  playScene.onEnter = mainGame_onEnter;
-  playScene.onExit = mainGame_onExit;
-  
-  Scene playUIscene = {};
-  playUIscene.update = mainGameUI_update;
-  playUIscene.render = mainGameUI_render;
-  playUIscene.onEnter = mainGameUI_onEnter;
-  playUIscene.onExit = mainGameUI_onExit;
-
-  SetScene(GetAuxScene(), &playUIscene);
-  SetScene(currScene, &playScene);
 }
 
 void WorldGeneration(void *userData) {
@@ -181,7 +166,7 @@ static void DeleteAFile(char *file_path) {
 }
 
 
-static void mainMenu_update(struct Scene *self) {
+static void scene_update(struct Scene *self) {
   mainmenu_data *menuData = (mainmenu_data *)self->data;
 
   FilePathList checkList = LoadDirectoryFiles(self->save_directory);
@@ -236,7 +221,7 @@ static void mainMenu_update(struct Scene *self) {
 
 }
 
-static void mainMenu_render(struct Scene *self) {
+static void scene_render(struct Scene *self) {
   ClearBackground(SKYBLUE);
   mainmenu_data *menuData = (mainmenu_data *)self->data;
   UI_data *uiData = &menuData->uiData[menuData->current_ui];
@@ -298,7 +283,7 @@ static void mainMenu_render(struct Scene *self) {
   }
 }
 
-static void mainMenu_onEnter(struct Scene *self) {
+static void scene_onEnter(struct Scene *self) {
 
   memset(self->arena->memory, 0, self->arena->Size);
   self->arena->Used = 0;
@@ -367,5 +352,6 @@ static void mainMenu_onEnter(struct Scene *self) {
   self->data = menuData;
 }
 
-static void mainMenu_onExit(struct Scene *self) {
+static void scene_onExit(struct Scene *self) {
 }
+#endif

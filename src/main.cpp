@@ -3,7 +3,7 @@
 
 #include "raylib.h"
 
-#include <string.h>
+#include "platform_win32.h"
 
 #if 0
 #define CURSOR_SIDE 32
@@ -95,7 +95,11 @@ int main() {
     }
   }
   
+  void *dllHandle = load_a_library(sceneTable.scene_path[0]);
+  void *rawfunction = gimme_function(dllHandle, (char *)"scene_onEnter");
+  Scene testScene = {};
 
+  testScene.onEnter = (void (*)(struct Scene *))rawfunction;
 
   while (!WindowShouldClose()) {
 
