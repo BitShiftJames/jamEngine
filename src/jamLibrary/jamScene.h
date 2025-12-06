@@ -12,7 +12,14 @@ void ClearAnArena(memoryArena *arena) {
   arena->Used = 0;
 };
 
+
 struct Scene;
+
+typedef void (*sceneUpdate)(struct Scene *self);
+typedef void (*sceneRender)(struct Scene *self);
+typedef void (*sceneOnEnter)(struct Scene *self);
+typedef void (*sceneOnExit)(struct Scene *self);
+
 struct Scene {
   void (*update)(struct Scene *self);
   void (*render)(struct Scene *self);
@@ -33,8 +40,8 @@ struct Scene {
 
 };
 
+
 static Scene *global_curr_scene = 0;
-static Scene *global_aux_scene = 0;
 
 Scene *GetCurrScene() {
   if (global_curr_scene) {
@@ -43,34 +50,29 @@ Scene *GetCurrScene() {
   return 0;
 }
 
-Scene *GetAuxScene() {
-  if (global_aux_scene) {
-    return global_aux_scene;
-  }
-  return 0;
-}
-
 // Needs an init call because it's the engines job to keep the Scene memory alive.
-void InitScene(Scene *currScene, Scene *auxScene) {
+void InitScene(Scene *currScene) {
   global_curr_scene = currScene;
-  global_aux_scene = auxScene;
+  if (global_curr_scene->onEnter) {
+    global_curr_scene->onEnter(global_curr_scene);
+  }
 };
 
 
 // Some solution to store the previous scene maybe a global.
-void SetScene(Scene *globalScene, Scene *setScene) {
+void SetScene(Scene *setScene) {
   
-  if (globalScene->onExit) {
-    globalScene->onExit(globalScene);
+  if (global_curr_scene->onExit) {
+    global_curr_scene->onExit(global_curr_scene);
   }
 
-  globalScene->update = setScene->update;
-  globalScene->render = setScene->render;
-  globalScene->onEnter = setScene->onEnter;
-  globalScene->onExit = setScene->onExit;
+  global_curr_scene->update = setScene->update;
+  global_curr_scene->render = setScene->render;
+  global_curr_scene->onEnter = setScene->onEnter;
+  global_curr_scene->onExit = setScene->onExit;
 
-  if (globalScene->onEnter) {
-    globalScene->onEnter(globalScene);
+  if (global_curr_scene->onEnter) {
+    global_curr_scene->onEnter(global_curr_scene);
   }
 
 }

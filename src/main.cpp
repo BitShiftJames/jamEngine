@@ -30,6 +30,25 @@ struct scene_table {
   char **scene_name;
   char **scene_path;
 };
+
+Scene Load_scene(scene_table *sceneTable, char *name) {
+  Scene result = {};
+  for (u32 i = 0; i < sceneTable->scene_count; i++) {
+    if (TextIsEqual(sceneTable->scene_name[i], name)) {
+
+      void *dllHandle = load_a_library(sceneTable->scene_path[i]);
+
+      result.onEnter = (sceneOnEnter)gimme_function(dllHandle, (char *)"scene_onEnter");
+      result.onExit = (sceneOnExit)gimme_function(dllHandle, (char *)"scene_onExit");
+      result.update = (sceneUpdate)gimme_function(dllHandle, (char *)"scene_update");
+      result.render = (sceneRender)gimme_function(dllHandle, (char *)"scene_render");
+
+      return result;
+    }
+  }
+  return result;
+}
+
 int main() {
   u32 flags = FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT;// FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED;
   SetConfigFlags(flags);
@@ -95,11 +114,16 @@ int main() {
     }
   }
   
-  void *dllHandle = load_a_library(sceneTable.scene_path[0]);
-  void *rawfunction = gimme_function(dllHandle, (char *)"scene_onEnter");
-  Scene testScene = {};
+  
+  Scene test_scene = Load_scene(&sceneTable, (char *)"menuScene");
 
-  testScene.onEnter = (void (*)(struct Scene *))rawfunction;
+  Scene global_scene = {};
+  InitScene(&global_scene);
+
+  SetScene(&test_scene);
+
+
+
 
   while (!WindowShouldClose()) {
 

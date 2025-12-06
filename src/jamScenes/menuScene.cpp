@@ -1,4 +1,3 @@
-#if 0
 #include "raylib.h"
 #include "../jamLibrary/jamMath.h"
 #include "../jamLibrary/jamTypes.h"
@@ -7,6 +6,7 @@
 #include "../jamLibrary/jamUI.h"
 
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -14,6 +14,7 @@
 
 #define MAX_ID_COUNT 256
 
+#if 0
 enum menus {
   menu_main = 0,
   menu_start,
@@ -132,7 +133,6 @@ void WorldGeneration(void *userData) {
   ClearAnArena(arena);
 
 };
-
 static inline void Reconstruct_Start_Menu(Scene *self, mainmenu_data *menuData) {
   UI_data *startMenudata = &menuData->uiData[menu_start];
   menuChange *mainMenuChange = &menuData->menuChanges[menu_main];
@@ -164,9 +164,11 @@ static void DeleteAFile(char *file_path) {
     // Fail due to running out of space.
   }
 }
+#endif
 
-
-static void scene_update(struct Scene *self) {
+extern "C" __declspec(dllexport) void scene_update(struct Scene *self) {
+  printf("SCENE:Update");
+  #if 0
   mainmenu_data *menuData = (mainmenu_data *)self->data;
 
   FilePathList checkList = LoadDirectoryFiles(self->save_directory);
@@ -218,10 +220,12 @@ static void scene_update(struct Scene *self) {
 
     }
   }
-
+  #endif
 }
 
-static void scene_render(struct Scene *self) {
+extern "C" __declspec(dllexport) void scene_render(struct Scene *self) {
+  printf("SCENE:Render");
+  #if 0
   ClearBackground(SKYBLUE);
   mainmenu_data *menuData = (mainmenu_data *)self->data;
   UI_data *uiData = &menuData->uiData[menuData->current_ui];
@@ -281,10 +285,12 @@ static void scene_render(struct Scene *self) {
 
     }
   }
+  #endif
 }
 
-static void scene_onEnter(struct Scene *self) {
-
+extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self) {
+  printf("SCENE:Enter");
+  #if 0
   memset(self->arena->memory, 0, self->arena->Size);
   self->arena->Used = 0;
   
@@ -350,8 +356,9 @@ static void scene_onEnter(struct Scene *self) {
   push_buttons(toolingMenudata, 40, (char *)"Back", {.2f, .5f}, WHITE, YELLOW, ChangeMenu, mainMenuChange, self->ScreenSize);
   
   self->data = menuData;
+  #endif
 }
 
-static void scene_onExit(struct Scene *self) {
+extern "C" __declspec(dllexport) void scene_onExit(struct Scene *self) {
+  printf("SCENE:Exit");
 }
-#endif
