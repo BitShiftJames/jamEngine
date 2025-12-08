@@ -21,6 +21,7 @@ src/jamScenes/compiled_scenes/
 *.VC.opendb
 *.otf
 *.ttf
+*.dll
 
 CMakeFiles/
 CMakeCache.txt

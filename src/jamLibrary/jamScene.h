@@ -2,18 +2,9 @@
 #define JAM_SCENE_H
 
 #include "jamTypes.h"
-
-#include <cstring>
+#include "jamText.h"
 
 #define MAX_FILE_PATH 1024
-
-void ClearAnArena(memoryArena *arena) {
-  memset(arena->memory, 0, arena->Used);
-  arena->Used = 0;
-};
-
-
-struct Scene;
 
 typedef void (*sceneUpdate)(struct Scene *self);
 typedef void (*sceneRender)(struct Scene *self);
@@ -28,53 +19,26 @@ struct Scene {
 
   void *data;
 
-  v2 MousePos;
-  v2 ScreenSize;
-
-  char save_directory[1024];
-  char parent_directory[1024];
-
   memoryArena *arena;
-
   memoryArena *temp_arena;
+};
 
+struct ActiveScene {
+  Scene *scene;
+  ActiveScene *next;
 };
 
 
-static Scene *global_curr_scene = 0;
-
-Scene *GetCurrScene() {
-  if (global_curr_scene) {
-    return global_curr_scene;
-  }
-  return 0;
-}
-
-// Needs an init call because it's the engines job to keep the Scene memory alive.
-void InitScene(Scene *currScene) {
-  global_curr_scene = currScene;
-  if (global_curr_scene->onEnter) {
-    global_curr_scene->onEnter(global_curr_scene);
-  }
+struct SceneList {
+  u32 scene_count;
+  char **scene_name;
+  Scene *scenes;
+  ActiveScene *start;
 };
 
-
-// Some solution to store the previous scene maybe a global.
-void SetScene(Scene *setScene) {
-  
-  if (global_curr_scene->onExit) {
-    global_curr_scene->onExit(global_curr_scene);
-  }
-
-  global_curr_scene->update = setScene->update;
-  global_curr_scene->render = setScene->render;
-  global_curr_scene->onEnter = setScene->onEnter;
-  global_curr_scene->onExit = setScene->onExit;
-
-  if (global_curr_scene->onEnter) {
-    global_curr_scene->onEnter(global_curr_scene);
-  }
-
-}
+Scene *GetScene(SceneList *sceneList, char *name);
+void AddScene(SceneList *sceneList, char *name, memoryArena *arena);
+Scene load_a_scene(char *path);
+SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_path);
 
 #endif // !JAM_SCENE_H

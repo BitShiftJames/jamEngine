@@ -1,9 +1,9 @@
+#include "jamLibrary/jamText.h"
 #include "jamLibrary/jamTypes.h"
 #include "jamLibrary/jamScene.h"
 
 #include "raylib.h"
 
-#include "platform_win32.h"
 
 #if 0
 #define CURSOR_SIDE 32
@@ -24,30 +24,6 @@ struct CursorObject {
   Cursor_inventory_information Inventory;
 };
 #endif
-
-struct scene_table {
-  u32 scene_count;
-  char **scene_name;
-  char **scene_path;
-};
-
-Scene Load_scene(scene_table *sceneTable, char *name) {
-  Scene result = {};
-  for (u32 i = 0; i < sceneTable->scene_count; i++) {
-    if (TextIsEqual(sceneTable->scene_name[i], name)) {
-
-      void *dllHandle = load_a_library(sceneTable->scene_path[i]);
-
-      result.onEnter = (sceneOnEnter)gimme_function(dllHandle, (char *)"scene_onEnter");
-      result.onExit = (sceneOnExit)gimme_function(dllHandle, (char *)"scene_onExit");
-      result.update = (sceneUpdate)gimme_function(dllHandle, (char *)"scene_update");
-      result.render = (sceneRender)gimme_function(dllHandle, (char *)"scene_render");
-
-      return result;
-    }
-  }
-  return result;
-}
 
 int main() {
   u32 flags = FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT;// FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED;
@@ -74,57 +50,27 @@ int main() {
   global_cursor.Inventory = CursorInventory;
   #endif
   
-  char *working_directory = (char *)GetWorkingDirectory();
-
-  {
-    int text_length = TextLength(working_directory);
-    TextAppend(working_directory, "\\jamScenes\\compiled_scenes", &text_length);
-  }
-
-  FilePathList scenes = LoadDirectoryFiles(working_directory);
-
   memoryArena scene_memory = {};
-  scene_memory.memory = MemAlloc(Megabytes(200));
-  scene_memory.Size = Megabytes(200);
+  scene_memory.Size = Megabytes(20);
+  scene_memory.memory = MemAlloc(scene_memory.Size);
 
-  u32 scene_count = 0;
-  scene_table sceneTable = {};
+  char *scene_path;
+  {
+    char *working_directory = (char *)GetWorkingDirectory();
+    int text_length = StringLength(working_directory);
+    TextAppend(working_directory, "\\jamScenes\\compiled_scenes", &text_length);
 
-  sceneTable.scene_path = PushArray(&scene_memory, 128, char *);
-  sceneTable.scene_name = PushArray(&scene_memory, 128, char *);
-
-  for (u32 i = 0; i < scenes.count; i++) {
-    if (IsFileExtension((scenes.paths[i]), ".dll") 
-        && !TextIsEqual(GetFileNameWithoutExt(scenes.paths[i]), "raylib")) {
-
-      s32 path_text_length = TextLength(scenes.paths[i]) + 1;
-      char *currPath = PushArray(&scene_memory, path_text_length, char);
-      
-      s32 scene_name_text_length = TextLength(GetFileNameWithoutExt(scenes.paths[i])) + 1;
-      char *scene_name_text = PushArray(&scene_memory, scene_name_text_length, char);
-
-
-      TextCopy(currPath, scenes.paths[i]);
-      TextCopy(scene_name_text, GetFileNameWithoutExt(scenes.paths[i]));
-
-      sceneTable.scene_name[sceneTable.scene_count] = scene_name_text;
-      sceneTable.scene_path[sceneTable.scene_count] = currPath;
-
-      sceneTable.scene_count++;
-    }
+    scene_path = PushArray(&scene_memory, StringLength(working_directory), char);
+    TextCopy(scene_path, working_directory);
   }
+
+
+  SceneList sceneTable = Construct_scene_table(&scene_memory, 128, scene_path);
+
+  AddScene(&sceneTable, (char *)"menuScene", &scene_memory);
+  AddScene(&sceneTable, (char *)"uiScene", &scene_memory);
+  AddScene(&sceneTable, (char *)"menuScene", &scene_memory);
   
-  
-  Scene test_scene = Load_scene(&sceneTable, (char *)"menuScene");
-
-  Scene global_scene = {};
-  InitScene(&global_scene);
-
-  SetScene(&test_scene);
-
-
-
-
   while (!WindowShouldClose()) {
 
     BeginDrawing();

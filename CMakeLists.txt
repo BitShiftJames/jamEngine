@@ -4,10 +4,11 @@ project(Lumaria)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/src)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-add_executable(${PROJECT_NAME} src/main.cpp src/platform_win32.cpp)
-
-option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
-file(GLOB SCENE_FILES LIST_DIRECTORIES false )
+add_executable(${PROJECT_NAME} 
+  src/main.cpp 
+  src/jamLibrary/jamText.cpp 
+  src/jamLibrary/jamScene.cpp 
+  src/platform_win32.cpp)
 
 add_subdirectory(external/raylib)
 target_link_libraries(${PROJECT_NAME} raylib)

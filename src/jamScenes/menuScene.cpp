@@ -1,16 +1,4 @@
-#include "raylib.h"
-#include "../jamLibrary/jamMath.h"
-#include "../jamLibrary/jamTypes.h"
 #include "../jamLibrary/jamScene.h"
-#include "../jamLibrary/jamCollision.h"
-#include "../jamLibrary/jamUI.h"
-
-
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-#include "../platform_win32.h"
 
 #define MAX_ID_COUNT 256
 
@@ -167,7 +155,7 @@ static void DeleteAFile(char *file_path) {
 #endif
 
 extern "C" __declspec(dllexport) void scene_update(struct Scene *self) {
-  printf("SCENE:Update");
+  int a = 2;
   #if 0
   mainmenu_data *menuData = (mainmenu_data *)self->data;
 
@@ -224,7 +212,7 @@ extern "C" __declspec(dllexport) void scene_update(struct Scene *self) {
 }
 
 extern "C" __declspec(dllexport) void scene_render(struct Scene *self) {
-  printf("SCENE:Render");
+  int a = 2;
   #if 0
   ClearBackground(SKYBLUE);
   mainmenu_data *menuData = (mainmenu_data *)self->data;
@@ -289,7 +277,7 @@ extern "C" __declspec(dllexport) void scene_render(struct Scene *self) {
 }
 
 extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self) {
-  printf("SCENE:Enter");
+  int a = 2;
   #if 0
   memset(self->arena->memory, 0, self->arena->Size);
   self->arena->Used = 0;
@@ -360,5 +348,5 @@ extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self) {
 }
 
 extern "C" __declspec(dllexport) void scene_onExit(struct Scene *self) {
-  printf("SCENE:Exit");
+  int a = 2;
 }

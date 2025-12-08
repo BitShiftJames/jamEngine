@@ -1,11 +1,8 @@
-#include <cstdio>
 #if 0
 #include "raylib.h"
 #endif
 
 #include "../jamLibrary/jamTypes.h"
-#include "../jamLibrary/jamMath.h"
-#include "../jamLibrary/jamTiles.h"
 #include "../jamLibrary/jamScene.h"
 
 // TODO[Scene]: Timing scene or something.
@@ -37,8 +34,6 @@ struct mainGame_data {
 
 extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self) {
   ClearAnArena(self->arena);
-
-  printf("bar mf");
 
   #if 0 
   File_box *recovered_file_box = (File_box *)self->data;

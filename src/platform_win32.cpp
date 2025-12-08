@@ -15,6 +15,7 @@ void recycle_delete(const char *path) {
 
 }
 void print_win32_error(DWORD error) {
+  SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
   LPVOID msg;
 
   FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -33,18 +34,11 @@ void print_win32_error(DWORD error) {
 void *load_a_library(const char *path) {
   void *ptr = LoadLibraryA(path);
 
-  DWORD error = GetLastError();
-
-  print_win32_error(error);
-
   return ptr;
 }
 
 void *gimme_function(void *dllHandle, char *function_name) {
   void *ptr = (void *)GetProcAddress((HMODULE)dllHandle, function_name);
-  DWORD error = GetLastError();
-
-  print_win32_error(error);
 
   return ptr;
 }

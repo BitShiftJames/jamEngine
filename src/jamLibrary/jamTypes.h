@@ -3,6 +3,7 @@
 
 // TODO: Get rid of C standard library? looked through the header and can't read how to actually set these myself.
 #include <stdint.h>
+#include <cstring>
 
 #define Minimum(a, b) ((a) < (b) ? (a) : (b))
 #define Maximum(a, b) ((a) > (b) ? (a) : (b))
@@ -67,17 +68,17 @@ struct jam_rect2 {
   };
 };
 
-bool operator==(v2 A, v2 B) {
+inline bool operator==(v2 A, v2 B) {
   return A.x == B.x &&
          A.y == B.y;
 }
 
-bool operator!=(v2 A, v2 B) {
+inline bool operator!=(v2 A, v2 B) {
   return A.x != B.x &&
          A.y != B.y;
 }
 
-v2 operator+(v2 A, v2 B) {
+inline v2 operator+(v2 A, v2 B) {
   v2 Result = {};
 
   Result.x = A.x + B.x;
@@ -86,7 +87,7 @@ v2 operator+(v2 A, v2 B) {
   return Result;
 }
 
-v2 operator-(v2 A, v2 B) {
+inline v2 operator-(v2 A, v2 B) {
   v2 Result = {};
 
   Result.x = A.x - B.x;
@@ -95,7 +96,7 @@ v2 operator-(v2 A, v2 B) {
   return Result;
 }
 
-v2 operator-(v2 A, f32 Scaler) {
+inline v2 operator-(v2 A, f32 Scaler) {
   v2 Result = {};
 
   Result.x = A.x - Scaler;
@@ -104,7 +105,7 @@ v2 operator-(v2 A, f32 Scaler) {
   return Result;
 }
 
-v2 operator*(v2 A, v2 B) {
+inline v2 operator*(v2 A, v2 B) {
   v2 Result = {};
 
   Result.x = A.x * B.x;
@@ -113,35 +114,35 @@ v2 operator*(v2 A, v2 B) {
   return Result;
 }
 
-v2& operator*=(v2& A, f32 Scalar) {
+inline v2& operator*=(v2& A, f32 Scalar) {
   A.x *= Scalar;
   A.y *= Scalar;
 
   return A;
 }
 
-v2& operator*=(v2& A, v2 B) {
+inline v2& operator*=(v2& A, v2 B) {
   A.x *= B.x;
   A.y *= B.y;
 
   return A;
 }
 
-v2& operator+=(v2& a, v2 b) {
+inline v2& operator+=(v2& a, v2 b) {
   a.x += b.x;
   a.y += b.y;
 
   return a;
 }
 
-v2& operator+=(v2& a, f32 b) {
+inline v2& operator+=(v2& a, f32 b) {
   a.x += b;
   a.y += b;
 
   return a;
 }
 
-v2 operator*(v2 A, f32 Scalar) {
+inline v2 operator*(v2 A, f32 Scalar) {
   v2 Result = {};
 
   Result.x = A.x * Scalar;
@@ -150,7 +151,7 @@ v2 operator*(v2 A, f32 Scalar) {
   return Result;
 }
 
-v2 operator/(v2 A, f32 Scalar) {
+inline v2 operator/(v2 A, f32 Scalar) {
   v2 Result = {};
 
   Result.x = A.x / Scalar;
@@ -159,7 +160,7 @@ v2 operator/(v2 A, f32 Scalar) {
   return Result;
 }
 
-v2 operator*(f32 Scalar, v2 A) {
+inline v2 operator*(f32 Scalar, v2 A) {
   v2 Result = {};
 
   Result.x = A.x * Scalar;
@@ -256,6 +257,11 @@ _PushSize(memoryArena *arena, size_t size) {
 
   return (void *)result;
 }
+
+inline void ClearAnArena(memoryArena *arena) {
+  memset(arena->memory, 0, arena->Used);
+  arena->Used = 0;
+};
 
 #define PushSize(arena, size) _PushSize((arena), (size))
 #define PushArray(arena, count, type)                                          \
