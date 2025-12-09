@@ -1,5 +1,8 @@
+
+#include "../jamLibrary/jamScene.h"
+#include "../jamLibrary/RayAPI.h"
+
 #if 0
-#include "raylib.h"
 #include "../jamLibrary/jamUI.h"
 
 struct item_slot {
@@ -76,8 +79,8 @@ extern "C" __declspec(dllexport) void scene_update(struct Scene *self) {
   int a = 2;
 }
 
-extern "C" __declspec(dllexport) void scene_render(struct Scene *self) {
-  int a = 2;
+extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *engineCTX) {
+  engineCTX->ClearBackground(Color_{255, 255, 255, 255});
 }
 
 extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self) {

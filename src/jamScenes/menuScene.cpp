@@ -1,4 +1,5 @@
 #include "../jamLibrary/jamScene.h"
+#include "../jamLibrary/RayAPI.h"
 
 #define MAX_ID_COUNT 256
 

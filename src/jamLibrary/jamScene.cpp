@@ -1,4 +1,6 @@
 #include "jamScene.h"
+
+#include "RayAPI.h"
 #include "raylib.h"
 
 #include "../platform_win32.h"
@@ -25,10 +27,19 @@ void AddScene(SceneList *sceneList, char *name, memoryArena *arena) {
 
     currNode = PushStruct(arena, ActiveScene);
     currNode->scene = GetScene(sceneList, name);
+
+    currNode->scene->onEnter(currNode->scene);
+
     headNode->next = currNode;
   } else {
     sceneList->start = PushStruct(arena, ActiveScene);
-    sceneList->start->scene = GetScene(sceneList, name);
+    ActiveScene *headNode = sceneList->start;
+
+    headNode->scene = GetScene(sceneList, name);
+    
+    // SO MANY POINTERS
+    headNode->scene->onEnter(headNode->scene);
+
   }
 }
 

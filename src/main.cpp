@@ -1,9 +1,10 @@
+#include "jamLibrary/RayAPI.h"
 #include "jamLibrary/jamText.h"
 #include "jamLibrary/jamTypes.h"
 #include "jamLibrary/jamScene.h"
 
+#include "platform_win32.h"
 #include "raylib.h"
-
 
 #if 0
 #define CURSOR_SIDE 32
@@ -31,9 +32,8 @@ int main() {
   // passing 0 makes raylib window the size of the screen.
   InitWindow(0, 0, "Restarting from scratch");
   SetTraceLogLevel(LOG_ALL);
-
   SetTargetFPS(30);
-
+  
   s32 ScreenWidth = GetScreenWidth();
   s32 ScreenHeight = GetScreenHeight();
 
@@ -64,17 +64,52 @@ int main() {
     TextCopy(scene_path, working_directory);
   }
 
+  RayAPI engineCTX = {};
+  engineCTX.ClearBackground = (tClearBackground)ClearBackground;
+
+  engineCTX.BeginDrawing = (tBeginDrawing)BeginDrawing;
+  engineCTX.EndDrawing = (tEndDrawing)EndDrawing;
+
+  engineCTX.BeginMode2D = (tBeginMode2D)BeginMode2D;
+  engineCTX.EndMode2D = (tEndMode2D)EndMode2D;
+
+  engineCTX.DrawLine = (tDrawLine)DrawLine;
+  engineCTX.DrawCircle = (tDrawCircle)DrawCircleSector;
+  engineCTX.DrawEllipse = (tDrawEllipse)DrawEllipseV;
+  engineCTX.DrawRectangle = (tDrawRectangle)DrawRectangleV;
+  engineCTX.DrawTriangle = (tDrawTriangle)DrawTriangle;
+  engineCTX.DrawPoly = (tDrawPoly)DrawPoly;
+  engineCTX.DrawText = (tDrawText)DrawTextEx;
+
+  engineCTX.GetFontDefault = (tGetFontDefault)GetFontDefault;
+  engineCTX.LoadFont = (tLoadFont)LoadFont;
+  engineCTX.MeasureText = (tMeasureText)MeasureTextEx;
 
   SceneList sceneTable = Construct_scene_table(&scene_memory, 128, scene_path);
 
-  AddScene(&sceneTable, (char *)"menuScene", &scene_memory);
   AddScene(&sceneTable, (char *)"uiScene", &scene_memory);
-  AddScene(&sceneTable, (char *)"menuScene", &scene_memory);
   
   while (!WindowShouldClose()) {
+    
+    {
+      ActiveScene *currNode = sceneTable.start;
+
+      while (currNode != 0) {
+        currNode->scene->update(currNode->scene);
+        currNode = currNode->next;
+      }
+
+    }
 
     BeginDrawing();
-      
+    {
+      ActiveScene *currNode = sceneTable.start;
+
+      while (currNode != 0) {
+        currNode->scene->render(currNode->scene, &engineCTX);
+        currNode = currNode->next;
+      }
+    }
     EndDrawing();
     //
 

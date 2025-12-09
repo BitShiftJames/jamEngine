@@ -1,9 +1,8 @@
-#if 0
-#include "raylib.h"
-#endif
 
 #include "../jamLibrary/jamTypes.h"
 #include "../jamLibrary/jamScene.h"
+
+#include "../jamLibrary/RayAPI.h"
 
 // TODO[Scene]: Timing scene or something.
 #if 0
@@ -170,7 +169,7 @@ extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self) {
   #endif
 }
 
-extern "C" __declspec(dllexport) void scene_render(struct Scene *self) {
+extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *engineCTX) {
   #if 0
   mainGame_data *gameData = (mainGame_data *)self->data;
 

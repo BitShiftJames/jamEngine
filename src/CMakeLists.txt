@@ -9,8 +9,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/jamScenes/compile
 
 file(GLOB SCENE_FILES LIST_DIRECTORIES false CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/jamScenes/*.cpp")
 
-option(BUILD_SHARED_LIBS "Build using static libraries" OFF)
-
 message("External = ${CMAKE_SOURCE_DIR}/../external/raylib")
 add_subdirectory(../external/raylib binary_dir)
 

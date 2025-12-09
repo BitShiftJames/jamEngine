@@ -4,16 +4,18 @@
 #include "jamTypes.h"
 #include "jamText.h"
 
+#include "RayAPI.h"
+
 #define MAX_FILE_PATH 1024
 
 typedef void (*sceneUpdate)(struct Scene *self);
-typedef void (*sceneRender)(struct Scene *self);
+typedef void (*sceneRender)(struct Scene *self, RayAPI *engineCTX);
 typedef void (*sceneOnEnter)(struct Scene *self);
 typedef void (*sceneOnExit)(struct Scene *self);
 
 struct Scene {
   void (*update)(struct Scene *self);
-  void (*render)(struct Scene *self);
+  void (*render)(struct Scene *self, RayAPI *engineCTX);
   void (*onEnter)(struct Scene *self);
   void (*onExit)(struct Scene *self);
 
