@@ -80,7 +80,7 @@ extern "C" __declspec(dllexport) void scene_update(struct Scene *self) {
 }
 
 extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *engineCTX) {
-  engineCTX->ClearBackground(Color_{255, 255, 255, 255});
+  engineCTX->ClearBackground(Color_{0, 0, 0, 255});
 }
 
 extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self) {

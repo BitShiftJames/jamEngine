@@ -5,6 +5,7 @@
 
 #include "platform_win32.h"
 #include "raylib.h"
+#include <cstdio>
 
 #if 0
 #define CURSOR_SIDE 32
@@ -25,6 +26,25 @@ struct CursorObject {
   Cursor_inventory_information Inventory;
 };
 #endif
+
+bool CheckFilePath(SceneList *scene_list, FilePathList *file_path_list) {
+
+  if (scene_list->scene_count != file_path_list->count) {
+    return true;
+  }
+
+  for (u32 Index = 0; Index < file_path_list->count; Index++) {
+    if (!TextEqual(file_path_list->paths[Index], scene_list->scene_path[Index])) {
+      return true;
+    }
+
+    if (GetFileModTime(file_path_list->paths[Index]) != scene_list->scene_mod_time[Index]) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 int main() {
   u32 flags = FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT;// FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED;
@@ -53,6 +73,10 @@ int main() {
   memoryArena scene_memory = {};
   scene_memory.Size = Megabytes(20);
   scene_memory.memory = MemAlloc(scene_memory.Size);
+  
+  memoryArena scene_path_memory = {};
+  scene_path_memory.Size = Kilobytes(3);
+  scene_path_memory.memory = MemAlloc(scene_path_memory.Size);
 
   char *scene_path;
   {
@@ -60,7 +84,7 @@ int main() {
     int text_length = StringLength(working_directory);
     TextAppend(working_directory, "\\jamScenes\\compiled_scenes", &text_length);
 
-    scene_path = PushArray(&scene_memory, StringLength(working_directory), char);
+    scene_path = PushArray(&scene_path_memory, StringLength(working_directory), char);
     TextCopy(scene_path, working_directory);
   }
 
@@ -85,12 +109,26 @@ int main() {
   engineCTX.LoadFont = (tLoadFont)LoadFont;
   engineCTX.MeasureText = (tMeasureText)MeasureTextEx;
 
-  SceneList sceneTable = Construct_scene_table(&scene_memory, 128, scene_path);
+  SceneList sceneTable = {};
+
+  {
+    FilePathList List = LoadDirectoryFilesEx(scene_path, ".dll", false);
+    sceneTable = Construct_scene_table(&scene_memory, 128, scene_path, &List);
+    UnloadDirectoryFiles(List);
+  }
 
   AddScene(&sceneTable, (char *)"uiScene", &scene_memory);
   
   while (!WindowShouldClose()) {
-    
+
+    {
+      FilePathList List = LoadDirectoryFilesEx(scene_path, ".dll", false);
+      if (CheckFilePath(&sceneTable, &List)) {
+          printf("bar mf");
+      }
+      UnloadDirectoryFiles(List);
+    }
+
     {
       ActiveScene *currNode = sceneTable.start;
 
