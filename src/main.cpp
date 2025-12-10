@@ -6,6 +6,7 @@
 #include "platform_win32.h"
 #include "raylib.h"
 #include <cstdio>
+#include <cstring>
 
 #if 0
 #define CURSOR_SIDE 32
@@ -28,6 +29,7 @@ struct CursorObject {
 #endif
 
 bool CheckFilePath(SceneList *scene_list, FilePathList *file_path_list) {
+   
 
   if (scene_list->scene_count != file_path_list->count) {
     return true;
@@ -45,7 +47,35 @@ bool CheckFilePath(SceneList *scene_list, FilePathList *file_path_list) {
 
   return false;
 }
+void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *sceneMemory) {
 
+  FilePathList List = LoadDirectoryFilesEx(scene_path, ".dll", false);
+
+  if (List.count == 0) {
+    return;
+  }
+
+  // TOOD[Timing]: Once I have a good timer system I need to set a function on this check
+  // to debounce because the build time is not instantaneous
+  if (CheckFilePath(sceneTable, &List)) {
+
+    Unload_scenes(sceneTable);
+
+    ActiveScene *list = sceneTable->list;       
+
+    memset(sceneMemory->memory, 0, sceneMemory->Used);
+    *sceneTable = Construct_scene_table(sceneMemory, 128, scene_path, &List);
+
+    sceneTable->list = list;
+
+    while (list) {
+      list->scene = GetScene(sceneTable, list->scene_name);
+      list = list->next;
+    }
+
+  }
+  UnloadDirectoryFiles(List);
+}
 int main() {
   u32 flags = FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT;// FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED;
   SetConfigFlags(flags);
@@ -71,9 +101,13 @@ int main() {
   #endif
   
   memoryArena scene_memory = {};
-  scene_memory.Size = Megabytes(20);
+  scene_memory.Size = Megabytes(1);
   scene_memory.memory = MemAlloc(scene_memory.Size);
   
+  memoryArena active_scene_memory = {};
+  active_scene_memory.Size = Megabytes(1);
+  active_scene_memory.memory = MemAlloc(scene_memory.Size);
+
   memoryArena scene_path_memory = {};
   scene_path_memory.Size = Kilobytes(3);
   scene_path_memory.memory = MemAlloc(scene_path_memory.Size);
@@ -117,23 +151,21 @@ int main() {
     UnloadDirectoryFiles(List);
   }
 
-  AddScene(&sceneTable, (char *)"uiScene", &scene_memory);
+  AddScene(&sceneTable, (char *)"uiScene", &active_scene_memory);
+  AddScene(&sceneTable, (char *)"uiScene", &active_scene_memory);
+  AddScene(&sceneTable, (char *)"uiScene", &active_scene_memory);
   
   while (!WindowShouldClose()) {
 
-    {
-      FilePathList List = LoadDirectoryFilesEx(scene_path, ".dll", false);
-      if (CheckFilePath(&sceneTable, &List)) {
-          printf("bar mf");
-      }
-      UnloadDirectoryFiles(List);
-    }
+    CheckForReload(scene_path, &sceneTable, &scene_memory);
 
     {
-      ActiveScene *currNode = sceneTable.start;
+      ActiveScene *currNode = sceneTable.list;
 
       while (currNode != 0) {
-        currNode->scene->update(currNode->scene);
+        if (currNode->scene) {
+          currNode->scene->update(currNode->scene);
+        }
         currNode = currNode->next;
       }
 
@@ -141,10 +173,12 @@ int main() {
 
     BeginDrawing();
     {
-      ActiveScene *currNode = sceneTable.start;
+      ActiveScene *currNode = sceneTable.list;
 
       while (currNode != 0) {
-        currNode->scene->render(currNode->scene, &engineCTX);
+        if (currNode->scene) {
+          currNode->scene->render(currNode->scene, &engineCTX);
+        }
         currNode = currNode->next;
       }
     }

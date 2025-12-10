@@ -6,6 +6,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/jamScenes/compile
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_SOURCE_DIR}/jamScenes/compiled_scenes)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/jamScenes/compiled_scenes)
 
+
 file(GLOB SCENE_FILES LIST_DIRECTORIES false CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/jamScenes/*.cpp")
 
 message("External = ${CMAKE_SOURCE_DIR}/../external/raylib")
@@ -20,4 +21,9 @@ foreach(src ${SCENE_FILES})
   add_library(${scene_name} MODULE ${src})
   target_link_libraries(${scene_name} raylib)
 
+  set_target_properties(${scene_name} PROPERTIES
+      PDB_NAME "${scene_name}_${BUILD_ID}"
+  )
+
 endforeach()
+

@@ -27,10 +27,10 @@ struct Scene {
 };
 
 struct ActiveScene {
+  char *scene_name;
   Scene *scene;
   ActiveScene *next;
 };
-
 
 struct SceneList {
   u32 scene_count;
@@ -38,12 +38,15 @@ struct SceneList {
   char **scene_path;
   u64 *scene_mod_time;
   Scene *scenes;
-  ActiveScene *start;
+  void **dll_handles;
+  // Stored in seperate memory.
+  ActiveScene *list;
 };
 
 Scene *GetScene(SceneList *sceneList, char *name);
 void AddScene(SceneList *sceneList, char *name, memoryArena *arena);
-Scene load_a_scene(char *path);
+Scene load_a_scene(char *path, void *dll_handle);
+void Unload_scenes(SceneList *sceneList);
 SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_path, FilePathList *List);
 
 #endif // !JAM_SCENE_H

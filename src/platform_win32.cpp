@@ -1,4 +1,5 @@
 
+#include "platform_win32.h"
 #include <cstdio>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -31,14 +32,27 @@ void print_win32_error(DWORD error) {
   printf("LoadLibrary failed with error %lu: %s\n", error, (char *)msg);
   LocalFree(msg);
 }
+
 void *load_a_library(const char *path) {
   void *ptr = LoadLibraryA(path);
+
+  print_win32_error(GetLastError());
 
   return ptr;
 }
 
-void *gimme_function(void *dllHandle, char *function_name) {
-  void *ptr = (void *)GetProcAddress((HMODULE)dllHandle, function_name);
+void unload_a_library(void *dll_handle) {
+  FreeLibrary((HMODULE)dll_handle);
+
+  print_win32_error(GetLastError());
+
+  return;
+}
+
+void *gimme_function(void *dll_handle, char *function_name) {
+  void *ptr = (void *)GetProcAddress((HMODULE)dll_handle, function_name);
+
+  print_win32_error(GetLastError());
 
   return ptr;
 }

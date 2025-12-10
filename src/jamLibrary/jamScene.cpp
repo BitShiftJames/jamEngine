@@ -16,36 +16,50 @@ Scene *GetScene(SceneList *sceneList, char *name) {
   return result;
 }
 
-void AddScene(SceneList *sceneList, char *name, memoryArena *arena) {
-  if (sceneList->start) {
-    ActiveScene *headNode = sceneList->start;
-    ActiveScene *currNode = sceneList->start->next;
 
-    while (currNode != 0) {
-      headNode = currNode;
-      currNode = currNode->next;
+void InsertActiveScene(SceneList *sceneList, memoryArena *arena, Scene *sceneptr, char *name) {
+
+  if (!sceneptr) {
+    return;
+  }
+
+  if (sceneList->list) {
+    ActiveScene *headNode = sceneList->list;
+    ActiveScene *tailNode = sceneList->list->next;
+
+    while (tailNode) {
+      headNode = tailNode;
+      tailNode = headNode->next;
     }
 
-    currNode = PushStruct(arena, ActiveScene);
-    currNode->scene = GetScene(sceneList, name);
+    tailNode = PushStruct(arena, ActiveScene);
+    tailNode->scene = sceneptr;
 
-    currNode->scene->onEnter(currNode->scene);
+    char *name_cpy = PushArray(arena, TextLength(name) + 1, char);
+    TextCopy(name_cpy, name);
 
-    headNode->next = currNode;
+    tailNode->scene_name = name_cpy;
+
+    headNode->next = tailNode;
+
   } else {
-    sceneList->start = PushStruct(arena, ActiveScene);
-    ActiveScene *headNode = sceneList->start;
+    sceneList->list= PushStruct(arena, ActiveScene);
+    sceneList->list->scene = sceneptr;
 
-    headNode->scene = GetScene(sceneList, name);
-    
-    // SO MANY POINTERS
-    headNode->scene->onEnter(headNode->scene);
-
+    char *name_cpy = PushArray(arena, TextLength(name) + 1, char);
+    TextCopy(name_cpy, name);
+    sceneList->list->scene_name = name_cpy;
   }
 }
 
-Scene load_a_scene(char *path) {
+void AddScene(SceneList *sceneList, char *name, memoryArena *active_scene_memory) {
+  InsertActiveScene(sceneList, active_scene_memory, GetScene(sceneList, name), name);
+}
+
+Scene load_a_scene(char *path, void **dll_handle) {
   void *dllHandle = load_a_library(path);
+
+  *dll_handle = dllHandle;
 
   Scene result = {};
   result.update = (sceneUpdate)gimme_function(dllHandle, (char *)"scene_update");
@@ -56,15 +70,32 @@ Scene load_a_scene(char *path) {
   return result;
 }
 
+void Unload_scenes(SceneList *sceneList) {
+  for (u32 Index = 0; Index < sceneList->scene_count; Index++) {
+    if (sceneList->dll_handles[Index]) {
+      // Future Proofing.
+      sceneList->scenes[Index].onExit  = 0;
+      sceneList->scenes[Index].onEnter = 0;
+      sceneList->scenes[Index].update  = 0;
+      sceneList->scenes[Index].render  = 0;
+
+      unload_a_library(sceneList->dll_handles[Index]);
+    }
+  }
+}
+
 SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_path, FilePathList *list) {
 
   u32 scene_count = 0;
   SceneList sceneTable = {};
 
   sceneTable.scenes = PushArray(arena, max_scenes, Scene);
+  sceneTable.dll_handles = PushArray(arena, max_scenes, void *);
   sceneTable.scene_name = PushArray(arena, max_scenes, char *);
   sceneTable.scene_path = PushArray(arena, max_scenes, char *);
   sceneTable.scene_mod_time = PushArray(arena, max_scenes, u64);
+  
+  sceneTable.scene_count = list->count;
 
   for (u32 i = 0; i < list->count; i++) {
     if (IsFileExtension((list->paths[i]), ".dll") 
@@ -106,11 +137,12 @@ SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_
         FileCopy(currPath, copy_path);
       }
 
-      sceneTable.scene_path[sceneTable.scene_count] = currPath;
-      sceneTable.scenes[sceneTable.scene_count] = load_a_scene(copy_path);
-      sceneTable.scene_mod_time[sceneTable.scene_count] = GetFileModTime(currPath);
+      sceneTable.scene_path[scene_count] = currPath;
+      sceneTable.scene_name[scene_count] = scene_name_text;
+      sceneTable.scenes[scene_count] = load_a_scene(copy_path, &sceneTable.dll_handles[scene_count]);
+      sceneTable.scene_mod_time[scene_count] = GetFileModTime(currPath);
 
-      sceneTable.scene_count++;
+      scene_count++;
     }
   }
 
