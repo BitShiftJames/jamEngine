@@ -81,7 +81,7 @@ extern "C" __declspec(dllexport) void scene_update(struct Scene *self) {
 
 extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *engineCTX) {
   engineCTX->ClearBackground(Color_{0, 0, 0, 255});
-  engineCTX->DrawRectangle(v2{20, 20}, v2{40, 40}, Color_{255, 0, 0, 255});
+  engineCTX->DrawRectangle(v2{400, 60}, v2{40, 40}, Color_{255, 0, 0, 255});
   //engineCTX->ClearBackground(Color_{255, 255, 255, 255});
 }
 

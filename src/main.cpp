@@ -5,7 +5,8 @@
 
 #include "platform_win32.h"
 #include "raylib.h"
-#include <cstdio>
+
+#include <cstdlib>
 #include <cstring>
 
 #if 0
@@ -28,9 +29,7 @@ struct CursorObject {
 };
 #endif
 
-bool CheckFilePath(SceneList *scene_list, FilePathList *file_path_list) {
-   
-
+bool CheckLibraries(SceneList *scene_list, FilePathList *file_path_list) {
   if (scene_list->scene_count != file_path_list->count) {
     return true;
   }
@@ -47,6 +46,73 @@ bool CheckFilePath(SceneList *scene_list, FilePathList *file_path_list) {
 
   return false;
 }
+
+struct src_file_list {
+  u32 source_file_count;
+  u64 *mod_time_list;
+  char **src_path;
+};
+
+src_file_list Construct_source_list(FilePathList *List, memoryArena *src_file_memory) {
+
+  memset(src_file_memory->memory, 0, src_file_memory->Used);
+
+  src_file_list src_files = {};
+  src_files.source_file_count = List->count;
+  src_files.src_path = PushArray(src_file_memory, src_files.source_file_count, char *);
+  src_files.mod_time_list = PushArray(src_file_memory, src_files.source_file_count, u64);
+  for (u32 Index = 0; Index < src_files.source_file_count; Index++) {
+    u32 path_length = StringLength(List->paths[Index]) + 1;
+    src_files.src_path[Index] = PushArray(src_file_memory, path_length, char);
+    TextCopy(src_files.src_path[Index], List->paths[Index]);
+
+    src_files.mod_time_list[Index] = GetFileModTime(src_files.src_path[Index]);
+  }
+
+  return src_files;
+}
+
+void CheckSrcFiles(char *src_path, char *build_path, src_file_list *source_files, memoryArena *src_file_memory) {
+  FilePathList List = LoadDirectoryFilesEx(src_path, ".cpp", false);
+
+  if (source_files->source_file_count != List.count) {
+
+    // FIXME: Repeat code turn to function?
+    *source_files = Construct_source_list(&List, src_file_memory);
+
+    if (!system(build_path)) {
+      // TODO[Error handling];
+    } 
+    return;
+  }
+
+  for (u32 Index = 0; Index < source_files->source_file_count; Index++) {
+    if (!TextEqual(source_files->src_path[Index], List.paths[Index])) {
+
+      // FIXME: Repeat code turn to function?
+      *source_files = Construct_source_list(&List, src_file_memory);
+
+      if (!system(build_path)) {
+        // TODO[Error handling];
+      } 
+      return;
+    }
+
+    if (source_files->mod_time_list[Index] != GetFileModTime(List.paths[Index])) {
+
+      // FIXME: Repeat code turn to function?
+      *source_files = Construct_source_list(&List, src_file_memory);
+
+      if (!system(build_path)) {
+        // TODO[Error handling];
+      } 
+      return;
+    }
+  }
+
+  UnloadDirectoryFiles(List);
+};
+
 void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *sceneMemory) {
 
   FilePathList List = LoadDirectoryFilesEx(scene_path, ".dll", false);
@@ -54,10 +120,10 @@ void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *sceneM
   if (List.count == 0) {
     return;
   }
-
+  
   // TOOD[Timing]: Once I have a good timer system I need to set a function on this check
   // to debounce because the build time is not instantaneous
-  if (CheckFilePath(sceneTable, &List)) {
+  if (CheckLibraries(sceneTable, &List)) {
 
     Unload_scenes(sceneTable);
 
@@ -75,7 +141,9 @@ void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *sceneM
 
   }
   UnloadDirectoryFiles(List);
+
 }
+
 int main() {
   u32 flags = FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT;// FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED;
   SetConfigFlags(flags);
@@ -103,23 +171,78 @@ int main() {
   memoryArena scene_memory = {};
   scene_memory.Size = Megabytes(1);
   scene_memory.memory = MemAlloc(scene_memory.Size);
-  
+
   memoryArena active_scene_memory = {};
   active_scene_memory.Size = Megabytes(1);
-  active_scene_memory.memory = MemAlloc(scene_memory.Size);
+  active_scene_memory.memory = MemAlloc(active_scene_memory.Size);
+
+  memoryArena src_file_memory = {};
+  src_file_memory.Size = Megabytes(1);
+  src_file_memory.memory = MemAlloc(src_file_memory.Size);
 
   memoryArena scene_path_memory = {};
   scene_path_memory.Size = Kilobytes(3);
   scene_path_memory.memory = MemAlloc(scene_path_memory.Size);
 
   char *scene_path;
+  char *src_path;
+  char *build_file_path;
+  SceneList sceneTable = {};
+  src_file_list srcList = {};
   {
     char *working_directory = (char *)GetWorkingDirectory();
-    int text_length = StringLength(working_directory);
-    TextAppend(working_directory, "\\jamScenes\\compiled_scenes", &text_length);
+    {
+      FilePathList List = LoadDirectoryFilesEx(working_directory, ".bat", true);
+      if (List.count == 1) {
+        int Text_Length = 0;
+        build_file_path = PushArray(&scene_path_memory, 2048, char);
+        TextAppend(build_file_path, "cd ", &Text_Length);
 
-    scene_path = PushArray(&scene_path_memory, StringLength(working_directory), char);
+        TextAppend(build_file_path, GetDirectoryPath(List.paths[0]), &Text_Length);
+
+        TextAppend(build_file_path, " && ", &Text_Length);
+
+        TextAppend(build_file_path, List.paths[0], &Text_Length);
+      } else {
+        // Error handling.
+      }
+      UnloadDirectoryFiles(List);
+
+    }
+
+    int text_length = StringLength(working_directory);
+    TextAppend(working_directory, "\\jamScenes", &text_length);
+
+    src_path = PushArray(&scene_path_memory, StringLength(working_directory) + 1, char);
+    TextCopy(src_path, working_directory);
+
+    text_length = StringLength(working_directory);
+    TextAppend(working_directory, "\\compiled_scenes", &text_length);
+
+    scene_path = PushArray(&scene_path_memory, StringLength(working_directory) + 1, char);
     TextCopy(scene_path, working_directory);
+
+    {
+      FilePathList List = LoadDirectoryFilesEx(src_path, ".cpp", false);
+      srcList = Construct_source_list(&List, &src_file_memory);
+      UnloadDirectoryFiles(List);
+    }
+
+    // TODO [Polish]:
+    // This could be built to auto detect if the mod time changed from last known time.
+    // Which would require saving the mod time to disk.
+    if (build_file_path) {
+      if (!system(build_file_path)) {
+        // Error Handling...
+      }
+    }
+
+    {
+      FilePathList List = LoadDirectoryFilesEx(scene_path, ".dll", false);
+      sceneTable = Construct_scene_table(&scene_memory, 128, scene_path, &List);
+      UnloadDirectoryFiles(List);
+    }
+
   }
 
   RayAPI engineCTX = {};
@@ -143,20 +266,13 @@ int main() {
   engineCTX.LoadFont = (tLoadFont)LoadFont;
   engineCTX.MeasureText = (tMeasureText)MeasureTextEx;
 
-  SceneList sceneTable = {};
-
-  {
-    FilePathList List = LoadDirectoryFilesEx(scene_path, ".dll", false);
-    sceneTable = Construct_scene_table(&scene_memory, 128, scene_path, &List);
-    UnloadDirectoryFiles(List);
-  }
-
   AddScene(&sceneTable, (char *)"uiScene", &active_scene_memory);
   AddScene(&sceneTable, (char *)"uiScene", &active_scene_memory);
   AddScene(&sceneTable, (char *)"uiScene", &active_scene_memory);
   
   while (!WindowShouldClose()) {
 
+    CheckSrcFiles(src_path, build_file_path, &srcList, &src_file_memory);
     CheckForReload(scene_path, &sceneTable, &scene_memory);
 
     {
