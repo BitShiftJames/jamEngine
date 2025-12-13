@@ -106,7 +106,6 @@ extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self) {
 
   self->data = gameData;
   #endif
-  ClearAnArena(self->temp_arena);
 
 }
 

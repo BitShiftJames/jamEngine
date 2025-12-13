@@ -1,6 +1,8 @@
 
 #include "../jamLibrary/jamScene.h"
 #include "../jamLibrary/RayAPI.h"
+#include <cstdio>
+#include <cstring>
 
 #if 0
 #include "../jamLibrary/jamUI.h"
@@ -74,21 +76,63 @@ struct mainGameUI_data {
 
 #endif
 
+struct container {
+  jam_rect2 rectangle;
+  Color_ color;
+};
+
+struct scene_data {
+  u32 container_count;
+  u32 container_capacity;
+  container *containers;
+};
+
+void push_container(u32 *count, u32 *container_capacity, container *containers, 
+                    v2 min, v2 max, Color_ color) {
+  u32 Count = *count;
+  u32 Capacity = *container_capacity;
+
+  if (Count < Capacity && containers != 0) {
+    containers[Count].color = color;
+    containers[Count].rectangle.Min = min;
+    containers[Count].rectangle.Max = max;
+
+    (*count)++;
+  }
+
+};
 
 extern "C" __declspec(dllexport) void scene_update(struct Scene *self) {
   int a = 2;
 }
 
 extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *engineCTX) {
+  scene_data *data = (scene_data *)self->data;
+
   engineCTX->ClearBackground(Color_{0, 0, 0, 255});
-  engineCTX->DrawRectangle(v2{400, 60}, v2{40, 40}, Color_{255, 0, 0, 255});
-  //engineCTX->ClearBackground(Color_{255, 255, 255, 255});
+
+  for (u32 Index = 0; Index < data->container_count; Index++) {
+    container *currContainer = &data->containers[Index];
+
+    engineCTX->DrawRectangle(currContainer->rectangle.Min, 
+                             currContainer->rectangle.Max, currContainer->color);
+  }
 }
 
 extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self) {
-  int a = 2;
+  printf("On Enter Logic");
+
+  self->data = PushStruct(self->arena, scene_data);
+  scene_data *data = (scene_data *)self->data;
+
+  data->container_capacity = 16;
+  data->containers = PushArray(self->arena, data->container_capacity, container);
+
+  push_container(&data->container_count, &data->container_capacity, 
+                 data->containers, v2{20, 20}, v2{200, 200}, Color_{125, 0, 25, 255});
+
 }
 
 extern "C" __declspec(dllexport) void scene_onExit(struct Scene *self) {
-  int a = 2;
+  memset(self->arena->memory, 0, self->arena->Used);
 }

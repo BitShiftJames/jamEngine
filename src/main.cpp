@@ -113,7 +113,7 @@ void CheckSrcFiles(char *src_path, char *build_path, src_file_list *source_files
   UnloadDirectoryFiles(List);
 };
 
-void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *sceneMemory) {
+void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *dll_memory) {
 
   FilePathList List = LoadDirectoryFilesEx(scene_path, ".dll", false);
 
@@ -125,18 +125,32 @@ void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *sceneM
   // to debounce because the build time is not instantaneous
   if (CheckLibraries(sceneTable, &List)) {
 
+    {
+      ActiveScene *list = sceneTable->list;
+      while (list) {
+        if (list->scene->onExit) {
+          list->scene->onExit(list->scene);
+        }
+        list = list->next;
+      }
+    }
+
     Unload_scenes(sceneTable);
 
-    ActiveScene *list = sceneTable->list;       
+    ActiveScene *temp_list = sceneTable->list;       
 
-    memset(sceneMemory->memory, 0, sceneMemory->Used);
-    *sceneTable = Construct_scene_table(sceneMemory, 128, scene_path, &List);
+    memset(dll_memory->memory, 0, dll_memory->Used);
+    *sceneTable = Construct_scene_table(dll_memory, 128, scene_path, &List);
 
-    sceneTable->list = list;
+    sceneTable->list = temp_list;
 
-    while (list) {
-      list->scene = GetScene(sceneTable, list->scene_name);
-      list = list->next;
+    while (temp_list) {
+      temp_list->scene = GetScene(sceneTable, temp_list->scene_name);
+      temp_list->scene->arena = temp_list->arena;
+      if (temp_list->scene->onEnter) {
+        temp_list->scene->onEnter(temp_list->scene);
+      }
+      temp_list = temp_list->next;
     }
 
   }
@@ -145,6 +159,27 @@ void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *sceneM
 }
 
 int main() {
+  // TODO[Refactor]: Have scenes suballocate out of a bigger memory block
+  memoryArena scene_memory = {};
+  scene_memory.Size = Megabytes(200);
+  scene_memory.memory = MemAlloc(scene_memory.Size);
+
+  memoryArena dll_memory = {};
+  dll_memory.Size = Megabytes(1);
+  dll_memory.memory = MemAlloc(dll_memory.Size);
+
+  memoryArena active_scene_list_memory = {};
+  active_scene_list_memory.Size = Megabytes(1);
+  active_scene_list_memory.memory = MemAlloc(active_scene_list_memory.Size);
+
+  memoryArena src_file_memory = {};
+  src_file_memory.Size = Megabytes(1);
+  src_file_memory.memory = MemAlloc(src_file_memory.Size);
+
+  memoryArena paths_memory = {};
+  paths_memory.Size = Kilobytes(3);
+  paths_memory.memory = MemAlloc(paths_memory.Size);
+
   u32 flags = FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT;// FLAG_WINDOW_TOPMOST | FLAG_WINDOW_UNDECORATED;
   SetConfigFlags(flags);
   // passing 0 makes raylib window the size of the screen.
@@ -167,22 +202,7 @@ int main() {
   CursorInventory.dest_rect = JamRectMinDim(v2{0, 0}, v2{16, 16});
   global_cursor.Inventory = CursorInventory;
   #endif
-  
-  memoryArena scene_memory = {};
-  scene_memory.Size = Megabytes(1);
-  scene_memory.memory = MemAlloc(scene_memory.Size);
 
-  memoryArena active_scene_memory = {};
-  active_scene_memory.Size = Megabytes(1);
-  active_scene_memory.memory = MemAlloc(active_scene_memory.Size);
-
-  memoryArena src_file_memory = {};
-  src_file_memory.Size = Megabytes(1);
-  src_file_memory.memory = MemAlloc(src_file_memory.Size);
-
-  memoryArena scene_path_memory = {};
-  scene_path_memory.Size = Kilobytes(3);
-  scene_path_memory.memory = MemAlloc(scene_path_memory.Size);
 
   char *scene_path;
   char *src_path;
@@ -195,7 +215,7 @@ int main() {
       FilePathList List = LoadDirectoryFilesEx(working_directory, ".bat", true);
       if (List.count == 1) {
         int Text_Length = 0;
-        build_file_path = PushArray(&scene_path_memory, 2048, char);
+        build_file_path = PushArray(&paths_memory, 2048, char);
         TextAppend(build_file_path, "cd ", &Text_Length);
 
         TextAppend(build_file_path, GetDirectoryPath(List.paths[0]), &Text_Length);
@@ -213,13 +233,13 @@ int main() {
     int text_length = StringLength(working_directory);
     TextAppend(working_directory, "\\jamScenes", &text_length);
 
-    src_path = PushArray(&scene_path_memory, StringLength(working_directory) + 1, char);
+    src_path = PushArray(&paths_memory, StringLength(working_directory) + 1, char);
     TextCopy(src_path, working_directory);
 
     text_length = StringLength(working_directory);
     TextAppend(working_directory, "\\compiled_scenes", &text_length);
 
-    scene_path = PushArray(&scene_path_memory, StringLength(working_directory) + 1, char);
+    scene_path = PushArray(&paths_memory, StringLength(working_directory) + 1, char);
     TextCopy(scene_path, working_directory);
 
     {
@@ -239,7 +259,7 @@ int main() {
 
     {
       FilePathList List = LoadDirectoryFilesEx(scene_path, ".dll", false);
-      sceneTable = Construct_scene_table(&scene_memory, 128, scene_path, &List);
+      sceneTable = Construct_scene_table(&dll_memory, 128, scene_path, &List);
       UnloadDirectoryFiles(List);
     }
 
@@ -266,14 +286,12 @@ int main() {
   engineCTX.LoadFont = (tLoadFont)LoadFont;
   engineCTX.MeasureText = (tMeasureText)MeasureTextEx;
 
-  AddScene(&sceneTable, (char *)"uiScene", &active_scene_memory);
-  AddScene(&sceneTable, (char *)"uiScene", &active_scene_memory);
-  AddScene(&sceneTable, (char *)"uiScene", &active_scene_memory);
+  AddScene(&sceneTable, (char *)"uiScene", &active_scene_list_memory, &scene_memory, Megabytes(4));
   
   while (!WindowShouldClose()) {
 
     CheckSrcFiles(src_path, build_file_path, &srcList, &src_file_memory);
-    CheckForReload(scene_path, &sceneTable, &scene_memory);
+    CheckForReload(scene_path, &sceneTable, &dll_memory);
 
     {
       ActiveScene *currNode = sceneTable.list;

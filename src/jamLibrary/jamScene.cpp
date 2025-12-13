@@ -34,6 +34,7 @@ void InsertActiveScene(SceneList *sceneList, memoryArena *arena, Scene *sceneptr
 
     tailNode = PushStruct(arena, ActiveScene);
     tailNode->scene = sceneptr;
+    tailNode->arena = sceneptr->arena;
 
     char *name_cpy = PushArray(arena, TextLength(name) + 1, char);
     TextCopy(name_cpy, name);
@@ -43,8 +44,9 @@ void InsertActiveScene(SceneList *sceneList, memoryArena *arena, Scene *sceneptr
     headNode->next = tailNode;
 
   } else {
-    sceneList->list= PushStruct(arena, ActiveScene);
+    sceneList->list = PushStruct(arena, ActiveScene);
     sceneList->list->scene = sceneptr;
+    sceneList->list->arena = sceneptr->arena;
 
     char *name_cpy = PushArray(arena, TextLength(name) + 1, char);
     TextCopy(name_cpy, name);
@@ -52,8 +54,21 @@ void InsertActiveScene(SceneList *sceneList, memoryArena *arena, Scene *sceneptr
   }
 }
 
-void AddScene(SceneList *sceneList, char *name, memoryArena *active_scene_memory) {
-  InsertActiveScene(sceneList, active_scene_memory, GetScene(sceneList, name), name);
+void AddScene(SceneList *sceneList, char *name, memoryArena *active_scene_memory, 
+              memoryArena *sceneMemory, u64 size) {
+  Scene *currScene = GetScene(sceneList, name);
+
+  // Could do a memory allocation here.
+  currScene->arena = PushStruct(sceneMemory, memoryArena);
+  currScene->arena->Size = size;
+  currScene->arena->memory = (u8 *)sceneMemory->memory + sceneMemory->Used;
+  sceneMemory->Used += currScene->arena->Size;
+
+  InsertActiveScene(sceneList, active_scene_memory, currScene, name);
+
+  if (currScene->onEnter) {
+    currScene->onEnter(currScene);
+  }
 }
 
 Scene load_a_scene(char *path, void **dll_handle) {

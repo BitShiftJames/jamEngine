@@ -23,12 +23,12 @@ struct Scene {
   void *data;
 
   memoryArena *arena;
-  memoryArena *temp_arena;
 };
 
 struct ActiveScene {
   char *scene_name;
   Scene *scene;
+  memoryArena *arena;
   ActiveScene *next;
 };
 
@@ -44,7 +44,8 @@ struct SceneList {
 };
 
 Scene *GetScene(SceneList *sceneList, char *name);
-void AddScene(SceneList *sceneList, char *name, memoryArena *arena);
+void AddScene(SceneList *sceneList, char *name, memoryArena *active_scene_memory, 
+              memoryArena *sceneMemory, u64 size);
 Scene load_a_scene(char *path, void *dll_handle);
 void Unload_scenes(SceneList *sceneList);
 SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_path, FilePathList *List);
