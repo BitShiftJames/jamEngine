@@ -46,6 +46,12 @@ void StringSplit(char *text, char delimiter, SplitBuffer *buf) {
   
 }
 
+void StringCopy(char *dst, char *src, char delimiter) {
+  for (u32 Index = 0; src[Index] != delimiter; Index++) {
+    dst[Index] = src[Index];
+  }
+}
+
 bool TextEqual(char *string1, char *string2, char delimiter, u32 max_string_count) {
 
   if (string1 == 0 || string2 == 0) {

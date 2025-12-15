@@ -11,13 +11,13 @@
 
 typedef void (*sceneUpdate)(struct Scene *self);
 typedef void (*sceneRender)(struct Scene *self, RayAPI *engineCTX);
-typedef void (*sceneOnEnter)(struct Scene *self);
+typedef void (*sceneOnEnter)(struct Scene *self, RayAPI *engineCTX);
 typedef void (*sceneOnExit)(struct Scene *self);
 
 struct Scene {
   void (*update)(struct Scene *self);
   void (*render)(struct Scene *self, RayAPI *engineCTX);
-  void (*onEnter)(struct Scene *self);
+  void (*onEnter)(struct Scene *self, RayAPI *engineCTX);
   void (*onExit)(struct Scene *self);
 
   void *data;
@@ -45,7 +45,7 @@ struct SceneList {
 
 Scene *GetScene(SceneList *sceneList, char *name);
 void AddScene(SceneList *sceneList, char *name, memoryArena *active_scene_memory, 
-              memoryArena *sceneMemory, u64 size);
+              memoryArena *sceneMemory, u64 size, RayAPI *engineCTX);
 Scene load_a_scene(char *path, void *dll_handle);
 void Unload_scenes(SceneList *sceneList);
 SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_path, FilePathList *List);

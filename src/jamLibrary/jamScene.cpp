@@ -55,7 +55,7 @@ void InsertActiveScene(SceneList *sceneList, memoryArena *arena, Scene *sceneptr
 }
 
 void AddScene(SceneList *sceneList, char *name, memoryArena *active_scene_memory, 
-              memoryArena *sceneMemory, u64 size) {
+              memoryArena *sceneMemory, u64 size, RayAPI *engineCTX) {
   Scene *currScene = GetScene(sceneList, name);
 
   // Could do a memory allocation here.
@@ -67,7 +67,7 @@ void AddScene(SceneList *sceneList, char *name, memoryArena *active_scene_memory
   InsertActiveScene(sceneList, active_scene_memory, currScene, name);
 
   if (currScene->onEnter) {
-    currScene->onEnter(currScene);
+    currScene->onEnter(currScene, engineCTX);
   }
 }
 

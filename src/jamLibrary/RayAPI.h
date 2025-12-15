@@ -76,6 +76,8 @@ struct Font_ {
   GlyphInfo_ *glyphs;
 };
 
+struct RayAPI;
+
 typedef void (*tClearBackground)(Color_ color);
 typedef void (*tBeginDrawing)(void);
 typedef void (*tEndDrawing)(void);
@@ -93,7 +95,18 @@ typedef Font_ (*tGetFontDefault)(void);
 typedef Font_ (*tLoadFont)(const char *fileName);
 typedef s32 (*tMeasureText)(Font_ font, const char *text, f32 fontsize, f32 spacing);
 
+struct Style {
+  Font_ font;
+  f32 spacing;
+  f32 size;
+};
+
 struct RayAPI {
+  v2 ScreenSize;
+  v2 MousePosition;
+
+  Style defaultStyle;
+
   tClearBackground ClearBackground;
 
   tBeginDrawing BeginDrawing;

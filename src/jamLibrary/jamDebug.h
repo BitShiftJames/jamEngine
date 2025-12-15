@@ -23,7 +23,6 @@ struct SnapShotRecords {
 };
 
 // Another reason to write my own lsp ffs.
-debugRecords MainDebugRecords[];
 
 struct timed_block {
   debugRecords *Record;
@@ -31,7 +30,6 @@ struct timed_block {
   u32 HitCount;
 
   timed_block(int Counter, char *FileName, int LineNumber, char *FunctionName, u32 HitCountInit = 1) {
-    Record = MainDebugRecords + Counter;
     HitCount = HitCountInit;
 
     Record->LineNumber = LineNumber;

@@ -113,7 +113,7 @@ void CheckSrcFiles(char *src_path, char *build_path, src_file_list *source_files
   UnloadDirectoryFiles(List);
 };
 
-void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *dll_memory) {
+void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *dll_memory, RayAPI *engineCTX) {
 
   FilePathList List = LoadDirectoryFilesEx(scene_path, ".dll", false);
 
@@ -148,7 +148,7 @@ void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *dll_me
       temp_list->scene = GetScene(sceneTable, temp_list->scene_name);
       temp_list->scene->arena = temp_list->arena;
       if (temp_list->scene->onEnter) {
-        temp_list->scene->onEnter(temp_list->scene);
+        temp_list->scene->onEnter(temp_list->scene, engineCTX);
       }
       temp_list = temp_list->next;
     }
@@ -187,9 +187,6 @@ int main() {
   SetTraceLogLevel(LOG_ALL);
   SetTargetFPS(30);
   
-  s32 ScreenWidth = GetScreenWidth();
-  s32 ScreenHeight = GetScreenHeight();
-
   #if 0
   CursorObject global_cursor = {};
   global_cursor.texture = LoadTexture("../assets/Cursor.png");
@@ -285,13 +282,20 @@ int main() {
   engineCTX.GetFontDefault = (tGetFontDefault)GetFontDefault;
   engineCTX.LoadFont = (tLoadFont)LoadFont;
   engineCTX.MeasureText = (tMeasureText)MeasureTextEx;
+  
+  engineCTX.ScreenSize = {(f32)GetScreenWidth(), (f32)GetScreenHeight()};
 
-  AddScene(&sceneTable, (char *)"uiScene", &active_scene_list_memory, &scene_memory, Megabytes(4));
+  AddScene(&sceneTable, (char *)"uiScene", &active_scene_list_memory, &scene_memory, Megabytes(4), &engineCTX);
   
   while (!WindowShouldClose()) {
 
     CheckSrcFiles(src_path, build_file_path, &srcList, &src_file_memory);
-    CheckForReload(scene_path, &sceneTable, &dll_memory);
+    CheckForReload(scene_path, &sceneTable, &dll_memory, &engineCTX);
+
+    {
+    Vector2 mousepos = GetMousePosition();
+    engineCTX.MousePosition = {mousepos.x, mousepos.y};
+    }
 
     {
       ActiveScene *currNode = sceneTable.list;
