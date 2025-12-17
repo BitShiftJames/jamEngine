@@ -49,7 +49,7 @@ void unload_a_library(void *dll_handle) {
   return;
 }
 
-void *gimme_function(void *dll_handle, char *function_name) {
+void *gimme_function(void *dll_handle, const char *function_name) {
   void *ptr = (void *)GetProcAddress((HMODULE)dll_handle, function_name);
 
   print_win32_error(GetLastError());

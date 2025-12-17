@@ -3,7 +3,6 @@
 
 #include "jamTypes.h"
 #include "jamIntrinsics.h"
-#include "raylib.h"
 
 #define SNAP_SHOT_HISTORY_COUNT 128
 

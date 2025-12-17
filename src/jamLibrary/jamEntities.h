@@ -5,7 +5,6 @@
 #include "jamMath.h"
 #include "jamTiles.h"
 #include "jamCollision.h"
-#include "raylib.h"
 
 #include "stdio.h"
 
@@ -403,7 +402,7 @@ static void entity_wonder(entity *Entity) {
       Entity->acceleration = v2{-1.0f * speed, 0};
     }
 }
-
+#if 0
 static void entity_idle(entity *Entity) {
     if (Entity->stateTime <= 0) {
       Entity->stateTime = 5;
@@ -506,5 +505,6 @@ static void render_entity_loop(total_entities *global_entities) {
     }
   }
 }
+#endif 
 
 #endif

@@ -1,13 +1,17 @@
 @echo off
-setlocal EnableDelayedExpansion
 
-where msbuild >nul 2>nul
-if errorlevel 1 (
-    echo Loading Visual Studio environment...
-    call "%ProgramFiles%\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
-) else (
-    echo Visual Studio environment already loaded
-)
+setlocal
+if defined VSCMD_VER goto :already_defined
+
+echo It was not here
+call "%ProgramFiles%\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+goto :not_defined
+
+endlocal
+
+:already_defined
+ECHO but it was already there
+:not_defined
 
 del /Q "..\jamScenes\compiled_scenes\*"
 

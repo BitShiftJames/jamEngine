@@ -1,10 +1,8 @@
 #include "jamScene.h"
 
 #include "RayAPI.h"
+#include "jamText.h"
 #include "jamTypes.h"
-#include "raylib.h"
-
-#include "../platform_win32.h"
 
 Scene *GetScene(SceneList *sceneList, char *name) {
   Scene *result = 0;
@@ -36,8 +34,8 @@ void InsertActiveScene(SceneList *sceneList, memoryArena *arena, Scene *sceneptr
     tailNode->scene = sceneptr;
     tailNode->arena = sceneptr->arena;
 
-    char *name_cpy = PushArray(arena, TextLength(name) + 1, char);
-    TextCopy(name_cpy, name);
+    char *name_cpy = PushArray(arena, StringLength(name) + 1, char);
+    StringCopy(name_cpy, name);
 
     tailNode->scene_name = name_cpy;
 
@@ -48,8 +46,8 @@ void InsertActiveScene(SceneList *sceneList, memoryArena *arena, Scene *sceneptr
     sceneList->list->scene = sceneptr;
     sceneList->list->arena = sceneptr->arena;
 
-    char *name_cpy = PushArray(arena, TextLength(name) + 1, char);
-    TextCopy(name_cpy, name);
+    char *name_cpy = PushArray(arena, StringLength(name) + 1, char);
+    StringCopy(name_cpy, name);
     sceneList->list->scene_name = name_cpy;
   }
 }
@@ -71,21 +69,21 @@ void AddScene(SceneList *sceneList, char *name, memoryArena *active_scene_memory
   }
 }
 
-Scene load_a_scene(char *path, void **dll_handle) {
-  void *dllHandle = load_a_library(path);
+Scene load_a_scene(char *path, void **dll_handle, RayAPI *engineCTX) {
+  void *dllHandle = engineCTX->LoadDLLFromPath(path);
 
   *dll_handle = dllHandle;
 
   Scene result = {};
-  result.update = (sceneUpdate)gimme_function(dllHandle, (char *)"scene_update");
-  result.render = (sceneRender)gimme_function(dllHandle, (char *)"scene_render");
-  result.onEnter = (sceneOnEnter)gimme_function(dllHandle, (char *)"scene_onEnter");
-  result.onExit = (sceneOnExit)gimme_function(dllHandle, (char *)"scene_onExit");
+  result.update = (sceneUpdate)engineCTX->LoadFunctionFromDLL(dllHandle, (char *)"scene_update");
+  result.render = (sceneRender)engineCTX->LoadFunctionFromDLL(dllHandle, (char *)"scene_render");
+  result.onEnter = (sceneOnEnter)engineCTX->LoadFunctionFromDLL(dllHandle, (char *)"scene_onEnter");
+  result.onExit = (sceneOnExit)engineCTX->LoadFunctionFromDLL(dllHandle, (char *)"scene_onExit");
 
   return result;
 }
 
-void Unload_scenes(SceneList *sceneList) {
+void Unload_scenes(SceneList *sceneList, RayAPI *engineCTX) {
   for (u32 Index = 0; Index < sceneList->scene_count; Index++) {
     if (sceneList->dll_handles[Index]) {
       // Future Proofing.
@@ -94,12 +92,12 @@ void Unload_scenes(SceneList *sceneList) {
       sceneList->scenes[Index].update  = 0;
       sceneList->scenes[Index].render  = 0;
 
-      unload_a_library(sceneList->dll_handles[Index]);
+      engineCTX->UnloadDLLFromPath(sceneList->dll_handles[Index]);
     }
   }
 }
 
-SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_path, FilePathList *list) {
+SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_path, FilePathList_ *list, RayAPI *engineCTX) {
 
   u32 scene_count = 0;
   SceneList sceneTable = {};
@@ -113,49 +111,49 @@ SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_
   sceneTable.scene_count = list->count;
 
   for (u32 i = 0; i < list->count; i++) {
-    if (IsFileExtension((list->paths[i]), ".dll") 
-        && !TextIsEqual(GetFileNameWithoutExt(list->paths[i]), "raylib")) {
+    if (engineCTX->IsFileExtension((list->paths[i]), ".dll") 
+        && !TextEqual(engineCTX->GetFileNameWithoutExt(list->paths[i]), "raylib")) {
 
-      s32 path_text_length = TextLength(list->paths[i]) + 1;
+      s32 path_text_length = StringLength((char *)list->paths[i]) + 1;
       char *currPath = PushArray(arena, path_text_length, char);
       
-      s32 scene_name_text_length = TextLength(GetFileNameWithoutExt(list->paths[i])) + 1;
+      s32 scene_name_text_length = StringLength(engineCTX->GetFileNameWithoutExt(list->paths[i])) + 1;
       char *scene_name_text = PushArray(arena, scene_name_text_length, char);
 
-      TextCopy(currPath, list->paths[i]);
-      TextCopy(scene_name_text, GetFileNameWithoutExt(list->paths[i]));
+      StringCopy(currPath, (char *)list->paths[i]);
+      StringCopy(scene_name_text, engineCTX->GetFileNameWithoutExt(list->paths[i]));
 
       sceneTable.scene_name[sceneTable.scene_count] = scene_name_text;
 
-      char *copy_library = (char *)GetFileNameWithoutExt(currPath);
+      char *copy_library = (char *)engineCTX->GetFileNameWithoutExt(currPath);
 
       {
-      s32 text_length = TextLength(copy_library);
-      TextAppend(copy_library, "_temp.dll", &text_length);
+      s32 text_length = StringLength(copy_library);
+      engineCTX->TextAppend(copy_library, "_temp.dll", &text_length);
       }
 
-      char *copy_path = (char *)GetDirectoryPath(currPath);
+      char *copy_path = (char *)engineCTX->GetDirectoryPath(currPath);
 
       {
-      s32 text_length = TextLength(copy_path);
-      TextAppend(copy_path, "\\temp\\", &text_length);
-      text_length = TextLength(copy_path);
-      TextAppend(copy_path, copy_library, &text_length);
+      s32 text_length = StringLength(copy_path);
+      engineCTX->TextAppend(copy_path, "\\temp\\", &text_length);
+      text_length = StringLength(copy_path);
+      engineCTX->TextAppend(copy_path, copy_library, &text_length);
 
       char *copy_path_temp = copy_path;
-      copy_path = PushArray(arena, TextLength(copy_path_temp), char);
+      copy_path = PushArray(arena, StringLength(copy_path_temp), char);
 
-        TextCopy(copy_path, copy_path_temp);
-        if (FileExists(copy_path)) {
-            FileRemove(copy_path);
+        StringCopy(copy_path, copy_path_temp);
+        if (engineCTX->FileExists(copy_path)) {
+            engineCTX->FileRemove(copy_path);
         }
-        FileCopy(currPath, copy_path);
+        engineCTX->FileCopy(currPath, copy_path);
       }
 
       sceneTable.scene_path[scene_count] = currPath;
       sceneTable.scene_name[scene_count] = scene_name_text;
-      sceneTable.scenes[scene_count] = load_a_scene(copy_path, &sceneTable.dll_handles[scene_count]);
-      sceneTable.scene_mod_time[scene_count] = GetFileModTime(currPath);
+      sceneTable.scenes[scene_count] = load_a_scene(copy_path, &sceneTable.dll_handles[scene_count], engineCTX);
+      sceneTable.scene_mod_time[scene_count] = engineCTX->GetFileModTime(currPath);
 
       scene_count++;
     }

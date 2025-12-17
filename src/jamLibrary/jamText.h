@@ -11,11 +11,11 @@ struct SplitBuffer {
   int count;
 };
 
-u32 StringLength(char *string);
+u32 StringLength(const char *string);
 void StringSet(char *string, char value);
-void StringCopy(char *dst, char *src, char delimiter = '\0');
-void StringSplit(char *text, char delimiter, SplitBuffer *buf);
+void StringCopy(char *dst, const char *src, char delimiter = '\0');
+void StringSplit(const char *text, char delimiter, SplitBuffer *buf);
 void ResetSplitBuffer(SplitBuffer *buf);
-bool TextEqual(char *string1, char *string2, char delimiter = '\0', u32 max_string_count = 1024);
+bool TextEqual(const char *string1, const char *string2, char delimiter = '\0', u32 max_string_count = 1024);
 
 #endif

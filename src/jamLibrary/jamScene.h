@@ -5,7 +5,6 @@
 #include "jamText.h"
 
 #include "RayAPI.h"
-#include "raylib.h"
 
 #define MAX_FILE_PATH 1024
 
@@ -46,8 +45,8 @@ struct SceneList {
 Scene *GetScene(SceneList *sceneList, char *name);
 void AddScene(SceneList *sceneList, char *name, memoryArena *active_scene_memory, 
               memoryArena *sceneMemory, u64 size, RayAPI *engineCTX);
-Scene load_a_scene(char *path, void *dll_handle);
-void Unload_scenes(SceneList *sceneList);
-SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_path, FilePathList *List);
+Scene load_a_scene(char *path, void *dll_handle, RayAPI *engineCTX);
+void Unload_scenes(SceneList *sceneList, RayAPI *engineCTX);
+SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_path, FilePathList_ *List, RayAPI *engineCTX);
 
 #endif // !JAM_SCENE_H

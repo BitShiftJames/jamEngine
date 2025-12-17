@@ -9,10 +9,6 @@
 // RAYLIB STATE. I COULD EVENTUALLY CONSTRUCT MY OWN BACKEND
 // BUT I DO NOT FEEL LIKE DOING SO TODAY.
 // 
-// Also side note this is not very flexible to change
-// so as I make this eventually things will turn into a bunch
-// of void pointers as is the nature of an ABI boundary I know
-// sue me.
 
 struct Color_ {
   u8 r;
@@ -76,6 +72,12 @@ struct Font_ {
   GlyphInfo_ *glyphs;
 };
 
+struct FilePathList_ {
+  u32 capacity;
+  u32 count;
+  char **paths;
+};
+
 struct RayAPI;
 
 typedef void (*tClearBackground)(Color_ color);
@@ -93,7 +95,39 @@ typedef void (*tDrawText)(Font_ font, const char *text, v2 position, float fontS
 
 typedef Font_ (*tGetFontDefault)(void);
 typedef Font_ (*tLoadFont)(const char *fileName);
+typedef void (*tUnloadFont)(Font_ font);
 typedef s32 (*tMeasureText)(Font_ font, const char *text, f32 fontsize, f32 spacing);
+
+typedef FilePathList_ (*tLoadDirectoryFiles)(const char *basePath, const char *filter, bool scanSubdirs);
+typedef void (*tUnloadDirectoryFiles)(FilePathList_ files);
+typedef bool (*tIsFileExtension)(const char *fileName, const char *ext);
+typedef const char *(*tGetFileNameWithoutExt)(const char *filePath);
+typedef const char *(*tGetDirectoryPath)(const char *filePath);
+typedef const char *(*tGetWorkingDirectory)(void);
+typedef bool (*tFileExist)(const char *fileName);
+typedef int (*tFileRemove)(const char *fileName);
+typedef int (*tFileCopy)(const char *srcPath, const char *dstPath);
+typedef long (*tGetFileModTime)(const char *fileName);
+typedef void (*tTextAppend)(char *text, const char *append, int *position);
+
+typedef void (*tUsersafeDeleteFile)(const char *path); // Has to be double null terminatad
+typedef void *(*tLoadFunctionFromDLL)(void *dll_handle, const char *function_name);
+typedef void *(*tLoadDLLFromPath)(const char *path);
+typedef void (*tUnloadDLLFromPath)(void *dll_handle);
+
+typedef void *(*tMemAlloc)(u32 size);
+typedef void *(*tMemRealloc)(void *ptr, u32 size);
+typedef void (*tMemFree)(void *ptr);
+
+typedef void (*tInitWindow)(s32 width, s32 height, const char *title);
+typedef void (*tCloseWindow)(void);
+typedef bool (*tWindowShouldClose)(void);
+typedef int (*tGetScreenWidth)(void);
+typedef int (*tGetScreenHeight)(void);
+
+typedef void (*tSetConfigFlags)(u32 flags);
+typedef void (*tSetTraceLogLevel)(s32 logLevel);
+typedef void (*tSetTargetFPS)(s32 fps);
 
 struct Style {
   Font_ font;
@@ -125,8 +159,41 @@ struct RayAPI {
 
   tGetFontDefault GetFontDefault;
   tLoadFont LoadFont;
+  tUnloadFont UnloadFont;
   tMeasureText MeasureText;
 
+  // FIXME: Switch over to homegrown solution.
+  tTextAppend TextAppend;
+  tLoadDirectoryFiles LoadDirectoryFiles;
+  tUnloadDirectoryFiles UnloadDirectoryFiles;
+  tIsFileExtension IsFileExtension;
+  tGetFileNameWithoutExt GetFileNameWithoutExt;
+  tGetDirectoryPath GetDirectoryPath;
+  tGetWorkingDirectory GetWorkingDirectory;
+
+  tFileExist FileExists;
+  tFileRemove FileRemove;
+  tFileCopy FileCopy;
+  tGetFileModTime GetFileModTime;
+
+  tUsersafeDeleteFile UsersafeDelete;
+  tLoadFunctionFromDLL LoadFunctionFromDLL;
+  tLoadDLLFromPath LoadDLLFromPath;
+  tUnloadDLLFromPath UnloadDLLFromPath;
+
+  tInitWindow InitWindow;
+  tCloseWindow CloseWindow;
+  tWindowShouldClose WindowShouldClose;
+  tGetScreenWidth GetScreenWidth;
+  tGetScreenHeight GetScreenHeight;
+
+  tMemAlloc MemAlloc; 
+  tMemRealloc MemRealloc;
+  tMemFree MemFree;
+
+  tSetConfigFlags SetConfigFlags;
+  tSetTargetFPS SetTargetFPS;
+  tSetTraceLogLevel SetTraceLogLevel;
 };
 
 #endif 

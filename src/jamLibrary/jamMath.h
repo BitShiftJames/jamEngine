@@ -2,8 +2,6 @@
 #define JAM_MATH_H
 
 #include "jamTypes.h"
-#include "raylib.h"
-
 // TODO: Get rid of C standard library.
 #include <math.h>
 
@@ -65,59 +63,6 @@ static inline u16 packR4G4B4A4(u16 r, u16 g, u16 b, u16 a) {
 // and use that to set the initial value. For continued precieved randomness we could do something.
 // like periodic take the file mod time and re seed the random function in raylib.
 //SetRandomSeed(unsigned int seed);
-
-static inline Vector2 JamToRayVec2(v2 A) {
-  Vector2 Result = {};
-
-  Result.x = A.x;
-  Result.y = A.y;
-
-  return Result;
-}
-
-static inline Vector3 JamToRayVec3(v3 A) {
-  Vector3 Result = {};
-
-  Result.x = A.x;
-  Result.y = A.y;
-  Result.z = A.z;
-  
-  return Result;
-}
-
-static inline Vector4 JamToRayVec4(v4 A) {
-  Vector4 Result = {};
-
-  Result.x = A.x;
-  Result.y = A.y;
-  Result.z = A.z;
-  Result.w = A.w;
-
-  return Result;
-}
-
-static inline Rectangle JamToRayRect(jam_rect2 A) {
-  Rectangle Result = {};
-
-  Result.x = A.x;
-  Result.y = A.y;
-  Result.width = A.Max.x - A.x;
-  Result.height = A.Max.y - A.y;
-
-  return Result;
-}
-
-
-static inline jam_rect2 JamRectMinDim(Rectangle A) {
-  jam_rect2 Result = {};
-
-  Result.x = A.x;
-  Result.y = A.y;
-  Result.Max.x = A.x + A.width;
-  Result.Max.y = A.y + A.height;
-
-  return Result;
-}
 
 static inline f32 floor_f32(f32 value) {
   f32 result = floorf(value);

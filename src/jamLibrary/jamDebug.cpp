@@ -1,6 +1,5 @@
 
 #include "jamDebug.h"
-#include "raylib.h"
 
 void Draw_Counter() {
   // TODO: See if there is a smart way to get the time spent waiting for a frame flip.
