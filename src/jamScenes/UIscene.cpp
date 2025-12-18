@@ -80,6 +80,7 @@ struct mainGameUI_data {
 
 struct scene_data {
   Containers containerStorage;
+  Camera3D_ camera;
 };
 
 
@@ -91,7 +92,12 @@ extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *e
   scene_data *data = (scene_data *)self->data;
 
   engineCTX->ClearBackground(Color_{0, 0, 0, 255});
-  
+
+  engineCTX->BeginMode3D(data->camera);
+  engineCTX->DrawCube(v3{6.0f, 0.0f, 0.0f}, v3{1.0f, 1.0f, 1.0f}, Color_{255, 0, 255, 255});
+  engineCTX->DrawCube(v3{3.0f, 0.0f, 0.0f}, v3{1.0f, 1.0f, 1.0f}, Color_{255, 0, 0, 255});
+  engineCTX->EndMode3D();
+
   Render_container(&data->containerStorage, engineCTX);
 }
 
@@ -107,6 +113,11 @@ extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self, RayAPI *
   push_container(&data->containerStorage.count, &data->containerStorage.capacity, 
                  data->containerStorage.containers, v2{0.2f, 0.2f}, v2{100, 500}, Color_{255, 0, 255, 255}, engineCTX);
 
+  data->camera.position = v3{0.0f, 10.0f, 10.0f};
+  data->camera.target = v3{0.0f, 0.0f, 0.0f};
+  data->camera.up = v3{0.0f, 1.0f, 0.0f};
+  data->camera.fovy = 45.0f;
+  data->camera.projection = 0;
 }
 
 extern "C" __declspec(dllexport) void scene_onExit(struct Scene *self) {

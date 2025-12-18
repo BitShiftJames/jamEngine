@@ -168,6 +168,9 @@ int main() {
   engineCTX.BeginMode2D = (tBeginMode2D)BeginMode2D;
   engineCTX.EndMode2D = (tEndMode2D)EndMode2D;
 
+  engineCTX.BeginMode3D = (tBeginMode3D)BeginMode3D;
+  engineCTX.EndMode3D = (tEndMode3D)EndMode3D;
+
   engineCTX.DrawLine = (tDrawLine)DrawLine;
   engineCTX.DrawCircle = (tDrawCircle)DrawCircleSector;
   engineCTX.DrawEllipse = (tDrawEllipse)DrawEllipseV;
@@ -214,6 +217,58 @@ int main() {
   engineCTX.SetTraceLogLevel = (tSetTraceLogLevel)SetTraceLogLevel;
 
   engineCTX.TextAppend = (tTextAppend)TextAppend;
+
+  engineCTX.DrawLine3D = (tDrawLine3D)DrawLine3D;
+  engineCTX.DrawPoint3D = (tDrawPoint3D)DrawPoint3D;
+  engineCTX.DrawCircle3D = (tDrawCircle3D)DrawCircle3D;
+  engineCTX.DrawTriangle3D = (tDrawTriangle3D)DrawTriangle3D;
+  engineCTX.DrawCube = (tDrawCube)DrawCubeV;
+  engineCTX.DrawSphere = (tDrawSphere)DrawSphereEx;
+  engineCTX.DrawCylinder = (tDrawCylinder)DrawCylinderEx;
+  engineCTX.DrawCapsule = (tDrawCapsule)DrawCapsule;
+  engineCTX.DrawPlane = (tDrawPlane)DrawPlane;
+  engineCTX.DrawRay = (tDrawRay)DrawRay;
+  engineCTX.DrawGrid = (tDrawGrid)DrawGrid;
+  engineCTX.DrawWireframeCube = (tDrawWireframeCube)DrawCubeWiresV;
+  engineCTX.DrawWireframeSphere = (tDrawWireframeSphere)DrawSphereWires;
+  engineCTX.DrawWireframeCylinder = (tDrawWireframeCylinder)DrawCylinderWiresEx;
+  engineCTX.DrawWireframeCapsule = (tDrawWireframeCapsule)DrawCapsuleWires;
+
+  engineCTX.GenMeshPoly = (tGenMeshPoly)GenMeshPoly;
+  engineCTX.GenMeshPlane = (tGenMeshPlane)GenMeshPlane;
+  engineCTX.GenMeshCube = (tGenMeshCube)GenMeshCube;
+  engineCTX.GenMeshSphere = (tGenMeshSphere)GenMeshSphere;
+  engineCTX.GenMeshCylinder = (tGenMeshCylinder)GenMeshCylinder;
+  engineCTX.GenMeshCone = (tGenMeshCone)GenMeshCone;
+  engineCTX.GenMeshTorus = (tGenMeshTorus)GenMeshTorus;
+  engineCTX.GenMeshKnot = (tGenMeshKnot)GenMeshKnot;
+  engineCTX.GenMeshHeightMap = (tGenMeshHeightMap)GenMeshHeightmap;
+  engineCTX.GenMeshCubicmap = (tGenMeshCubicmap)GenMeshCubicmap;
+
+  engineCTX.LoadModel = (tLoadModel)LoadModel;
+  engineCTX.LoadModelFromMesh = (tLoadModelFromMesh)LoadModelFromMesh;
+  engineCTX.IsModelValid = (tIsModelValid)IsModelValid;
+  engineCTX.UnloadModel = (tUnloadModel)UnloadModel;
+  engineCTX.GetModelBoundingBox = (tGetModelBoundingBox)GetModelBoundingBox;
+
+  engineCTX.DrawModel = (tDrawModel)DrawModel;
+  engineCTX.DrawWireframe = (tDrawWireframe)DrawModelWiresEx;
+  engineCTX.DrawModelPoints = (tDrawModelPoints)DrawModelPointsEx;
+  engineCTX.DrawBillboard = (tDrawBillboard)DrawBillboardPro;
+
+  engineCTX.UploadMesh = (tUploadMesh)UploadMesh;
+  engineCTX.DrawMesh = (tDrawMesh)DrawMesh;
+  engineCTX.DrawMeshInstanced = (tDrawMeshInstanced)DrawMeshInstanced;
+  engineCTX.GetMeshBoundingBox = (tGetMeshBoundingBox)GetMeshBoundingBox;
+  engineCTX.GenMeshTangents = (tGenMeshTangents)GenMeshTangents;
+  engineCTX.ExportMesh = (tExportMesh)ExportMesh;
+
+  engineCTX.LoadMaterials = (tLoadMaterials)LoadMaterials;
+  engineCTX.LoadMaterialsDefault = (tLoadMaterialsDefault)LoadMaterialDefault;
+  engineCTX.UnloadMaterial = (tUnloadMaterial)UnloadMaterial;
+  engineCTX.IsMaterialValid = (tIsMaterialValid)IsMaterialValid;
+  engineCTX.SetMaterialTexture = (tSetMaterialTexture)SetMaterialTexture;
+  engineCTX.SetModelMeshMaterial = (tSetModelMeshMaterial)SetModelMeshMaterial;
 
   // TODO[Refactor]: Have scenes suballocate out of a bigger memory block
   memoryArena scene_memory = {};

@@ -17,6 +17,7 @@ src/external/
 src/scene_build/*
 !src/scene_build/build.bat
 
+*.lib
 *.pdb
 *.sln
 *.vcxproj

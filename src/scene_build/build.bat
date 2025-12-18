@@ -1,13 +1,13 @@
 @echo off
 
-setlocal
+setlocal enabledelayedexpansion
+setlocal enableextensions
+
 if defined VSCMD_VER goto :already_defined
 
 echo It was not here
 call "%ProgramFiles%\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 goto :not_defined
-
-endlocal
 
 :already_defined
 ECHO but it was already there
