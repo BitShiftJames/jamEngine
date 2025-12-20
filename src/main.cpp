@@ -129,7 +129,7 @@ void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *dll_me
       ActiveScene *list = sceneTable->list;
       while (list) {
         if (list->scene->onExit) {
-          list->scene->onExit(list->scene);
+          list->scene->onExit(list->scene, engineCTX);
         }
         list = list->next;
       }
@@ -270,6 +270,26 @@ int main() {
   engineCTX.SetMaterialTexture = (tSetMaterialTexture)SetMaterialTexture;
   engineCTX.SetModelMeshMaterial = (tSetModelMeshMaterial)SetModelMeshMaterial;
 
+  engineCTX.IsMouseButtonPressed = (tIsMouseButtonPressed)IsMouseButtonPressed;
+  engineCTX.IsMouseButtonDown = (tIsMouseButtonDown)IsMouseButtonDown;
+  engineCTX.IsMouseButtonReleased = (tIsMouseButtonReleased)IsMouseButtonReleased;
+  engineCTX.IsMouseButtonUp = (tIsMouseButtonUp)IsMouseButtonUp;
+  engineCTX.GetMouseDelta = (tGetMouseDelta)GetMouseDelta;
+  engineCTX.GetMousePosition = (tGetMousePosition)GetMousePosition;
+  engineCTX.GetWheelMove = (tGetWheelMove)GetMouseWheelMoveV;
+
+  engineCTX.IsKeyPressed = (tIsKeyPressed)IsKeyPressed;
+  engineCTX.IsKeyPressedRepeat = (tIsKeyPressedRepeat)IsKeyPressedRepeat;
+  engineCTX.IsKeyDown = (tIsKeyDown)IsKeyDown;
+  engineCTX.IsKeyReleased = (tIsKeyReleased)IsKeyReleased;
+  engineCTX.IsKeyUp = (tIsKeyUp)IsKeyUp;
+  engineCTX.GetKeyPressed = (tGetKeyPressed)GetKeyPressed;
+  engineCTX.GetCharPressed = (tGetCharPressed)GetCharPressed;
+  engineCTX.GetKeyName = (tGetKeyName)GetKeyName;
+  engineCTX.SetExitKey = (tSetExitKey)SetExitKey;
+
+  engineCTX.UpdateCamera = (tUpdateCamera)UpdateCamera;
+
   // TODO[Refactor]: Have scenes suballocate out of a bigger memory block
   memoryArena scene_memory = {};
   scene_memory.Size = Megabytes(200);
@@ -392,7 +412,7 @@ int main() {
 
       while (currNode != 0) {
         if (currNode->scene) {
-          currNode->scene->update(currNode->scene);
+          currNode->scene->update(currNode->scene, &engineCTX);
         }
         currNode = currNode->next;
       }

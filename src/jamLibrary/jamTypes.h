@@ -185,6 +185,16 @@ struct v3 {
   };
 };
 
+inline v3 operator-(v3 A, v3 B) {
+  v3 Result = {};
+
+  Result.x = A.x - B.x;
+  Result.y = A.y - B.y;
+  Result.z = A.z - B.z;
+
+  return Result;
+}
+
 struct v4 {
   union {
     struct {

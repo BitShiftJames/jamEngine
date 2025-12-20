@@ -14,6 +14,7 @@ src/jamScenes/compiled_scenes/
 src/scene_build/
 src/external/
 
+src/jamLibrary.lib
 src/scene_build/*
 !src/scene_build/build.bat
 

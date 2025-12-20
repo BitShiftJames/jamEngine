@@ -64,31 +64,31 @@ static inline u16 packR4G4B4A4(u16 r, u16 g, u16 b, u16 a) {
 // like periodic take the file mod time and re seed the random function in raylib.
 //SetRandomSeed(unsigned int seed);
 
-static inline f32 floor_f32(f32 value) {
+inline f32 floor_f32(f32 value) {
   f32 result = floorf(value);
 
   return result;
 }
 
-static inline f32 SquareRoot(f32 value) {
+inline f32 SquareRoot(f32 value) {
   f32 Result = sqrtf(value);
 
   return Result;
 }
 
-static inline f32 Inner(v2 A, v2 B) {
+inline f32 Inner(v2 A, v2 B) {
   f32 Result = A.x * B.x + A.y * B.y;
 
   return Result;
 }
 
-static inline f32 LengthSq(v2 A) {
+inline f32 LengthSq(v2 A) {
   f32 Result = Inner(A, A);
   
   return Result;
 }
 
-static inline f32 Length(v2 A) {
+inline f32 Length(v2 A) {
   f32 Result = SquareRoot(LengthSq(A));
 
   return Result;

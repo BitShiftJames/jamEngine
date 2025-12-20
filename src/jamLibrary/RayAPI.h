@@ -167,6 +167,129 @@ struct FilePathList_ {
   char **paths;
 };
 
+enum Keyboard_keys {
+    K_NULL            = 0,
+    K_APOSTROPHE      = 39,
+    K_COMMA           = 44,
+    K_MINUS           = 45,
+    K_PERIOD          = 46,
+    K_SLASH           = 47,
+    K_ZERO            = 48,
+    K_ONE             = 49,
+    K_TWO             = 50,
+    K_THREE           = 51,
+    K_FOUR            = 52,
+    K_FIVE            = 53,
+    K_SIX             = 54,
+    K_SEVEN           = 55,
+    K_EIGHT           = 56,
+    K_NINE            = 57,
+    K_SEMICOLON       = 59,
+    K_EQUAL           = 61,
+    K_A               = 65,
+    K_B               = 66,
+    K_C               = 67,
+    K_D               = 68,
+    K_E               = 69,
+    K_F               = 70,
+    K_G               = 71,
+    K_H               = 72,
+    K_I               = 73,
+    K_J               = 74,
+    K_K               = 75,
+    K_L               = 76,
+    K_M               = 77,
+    K_N               = 78,
+    K_O               = 79,
+    K_P               = 80,
+    K_Q               = 81,
+    K_R               = 82,
+    K_S               = 83,
+    K_T               = 84,
+    K_U               = 85,
+    K_V               = 86,
+    K_W               = 87,
+    K_X               = 88,
+    K_Y               = 89,
+    K_Z               = 90,
+    K_LEFT_BRACKET    = 91,
+    K_BACKSLASH       = 92,
+    K_RIGHT_BRACKET   = 93,
+    K_GRAVE           = 96,
+    K_SPACE           = 32,
+    K_ESCAPE          = 256,
+    K_ENTER           = 257,
+    K_TAB             = 258,
+    K_BACKSPACE       = 259,
+    K_INSERT          = 260,
+    K_DELETE          = 261,
+    K_RIGHT           = 262,
+    K_LEFT            = 263,
+    K_DOWN            = 264,
+    K_UP              = 265,
+    K_PAGE_UP         = 266,
+    K_PAGE_DOWN       = 267,
+    K_HOME            = 268,
+    K_END             = 269,
+    K_CAPS_LOCK       = 280,
+    K_SCROLL_LOCK     = 281,
+    K_NUM_LOCK        = 282,
+    K_PRINT_SCREEN    = 283,
+    K_PAUSE           = 284,
+    K_F1              = 290,
+    K_F2              = 291,
+    K_F3              = 292,
+    K_F4              = 293,
+    K_F5              = 294,
+    K_F6              = 295,
+    K_F7              = 296,
+    K_F8              = 297,
+    K_F9              = 298,
+    K_F10             = 299,
+    K_F11             = 300,
+    K_F12             = 301,
+    K_LEFT_SHIFT      = 340,
+    K_LEFT_CONTROL    = 341,
+    K_LEFT_ALT        = 342,
+    K_LEFT_SUPER      = 343,
+    K_RIGHT_SHIFT     = 344,
+    K_RIGHT_CONTROL   = 345,
+    K_RIGHT_ALT       = 346,
+    K_RIGHT_SUPER     = 347,
+    K_KB_MENU         = 348,
+    K_KP_0            = 320,
+    K_KP_1            = 321,
+    K_KP_2            = 322,
+    K_KP_3            = 323,
+    K_KP_4            = 324,
+    K_KP_5            = 325,
+    K_KP_6            = 326,
+    K_KP_7            = 327,
+    K_KP_8            = 328,
+    K_KP_9            = 329,
+    K_KP_DECIMAL      = 330,
+    K_KP_DIVIDE       = 331,
+    K_KP_MULTIPLY     = 332,
+    K_KP_SUBTRACT     = 333,
+    K_KP_ADD          = 334,
+    K_KP_ENTER        = 335,
+    K_KP_EQUAL        = 336,
+    K_BACK            = 4,
+    K_MENU            = 5,
+    K_VOLUME_UP       = 24,
+    K_VOLUME_DOWN     = 25
+};
+
+enum Mouse_button_keys {
+    M1 = 0,       // Mouse button left
+    M2 = 1,       // Mouse button right
+    M3 = 2,       // Mouse button middle (pressed wheel)
+    M6 = 3,       // Mouse button side (advanced mouse device)
+    M7 = 4,       // Mouse button extra (advanced mouse device)
+    M4 = 5,       // Mouse button forward (advanced mouse device)
+    M5 = 6,       // Mouse button back (advanced mouse device)
+};
+
 struct RayAPI;
 
 typedef void (*tClearBackground)(Color_ color);
@@ -275,6 +398,26 @@ typedef void (*tIsMaterialValid)(Material_ material);
 typedef void (*tSetMaterialTexture)(Material_ *material, s32 mapType, Texture2D_ texture);
 typedef void (*tSetModelMeshMaterial)(Model_ *model, s32 meshId, s32 materialId);
 
+typedef bool (*tIsMouseButtonPressed)(int button);
+typedef bool (*tIsMouseButtonDown)(int button);
+typedef bool (*tIsMouseButtonReleased)(int button);
+typedef bool (*tIsMouseButtonUp)(int button);
+typedef v2 (*tGetMouseDelta)(void);
+typedef v2 (*tGetMousePosition)(void);
+typedef v2 (*tGetWheelMove)(void);
+
+typedef bool (*tIsKeyPressed)(s32 key);
+typedef bool (*tIsKeyPressedRepeat)(s32 key);
+typedef bool (*tIsKeyDown)(s32 key);
+typedef bool (*tIsKeyReleased)(s32 key);
+typedef bool (*tIsKeyUp)(s32 key);
+typedef int (*tGetKeyPressed)(void);
+typedef int (*tGetCharPressed)(void);
+typedef const char *(*tGetKeyName)(s32 key);
+typedef void (*tSetExitKey)(s32 key);
+
+typedef void (*tUpdateCamera)(Camera3D_ *camera, v3 movement, v3 rotation, f32 zoom);
+
 struct Style {
   Font_ font;
   f32 spacing;
@@ -313,6 +456,7 @@ struct RayAPI {
 
   // FIXME: Switch over to homegrown solution.
   tTextAppend TextAppend;
+
   tLoadDirectoryFiles LoadDirectoryFiles;
   tUnloadDirectoryFiles UnloadDirectoryFiles;
   tIsFileExtension IsFileExtension;
@@ -395,7 +539,26 @@ struct RayAPI {
   tIsMaterialValid IsMaterialValid;
   tSetMaterialTexture SetMaterialTexture;
   tSetModelMeshMaterial SetModelMeshMaterial;
-  
+
+  tIsMouseButtonPressed IsMouseButtonPressed;
+  tIsMouseButtonDown IsMouseButtonDown;
+  tIsMouseButtonReleased IsMouseButtonReleased;
+  tIsMouseButtonUp IsMouseButtonUp;
+  tGetMouseDelta GetMouseDelta;
+  tGetMousePosition GetMousePosition;
+  tGetWheelMove GetWheelMove;
+
+  tIsKeyPressed IsKeyPressed;
+  tIsKeyPressedRepeat IsKeyPressedRepeat;
+  tIsKeyDown IsKeyDown;
+  tIsKeyReleased IsKeyReleased;
+  tIsKeyUp IsKeyUp;
+  tGetKeyPressed GetKeyPressed;
+  tGetCharPressed GetCharPressed;
+  tGetKeyName GetKeyName;
+  tSetExitKey SetExitKey;
+
+  tUpdateCamera UpdateCamera;
 };
 
 #endif 

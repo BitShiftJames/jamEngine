@@ -8,16 +8,16 @@
 
 #define MAX_FILE_PATH 1024
 
-typedef void (*sceneUpdate)(struct Scene *self);
+typedef void (*sceneUpdate)(struct Scene *self, RayAPI *engineCTX);
 typedef void (*sceneRender)(struct Scene *self, RayAPI *engineCTX);
 typedef void (*sceneOnEnter)(struct Scene *self, RayAPI *engineCTX);
-typedef void (*sceneOnExit)(struct Scene *self);
+typedef void (*sceneOnExit)(struct Scene *self, RayAPI *engineCTX);
 
 struct Scene {
-  void (*update)(struct Scene *self);
+  void (*update)(struct Scene *self, RayAPI *engineCTX);
   void (*render)(struct Scene *self, RayAPI *engineCTX);
   void (*onEnter)(struct Scene *self, RayAPI *engineCTX);
-  void (*onExit)(struct Scene *self);
+  void (*onExit)(struct Scene *self, RayAPI *engineCTX);
 
   void *data;
 
