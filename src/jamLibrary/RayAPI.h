@@ -324,7 +324,9 @@ typedef bool (*tFileExist)(const char *fileName);
 typedef int (*tFileRemove)(const char *fileName);
 typedef int (*tFileCopy)(const char *srcPath, const char *dstPath);
 typedef long (*tGetFileModTime)(const char *fileName);
+
 typedef void (*tTextAppend)(char *text, const char *append, int *position);
+typedef const char *(*tTextFormat)(const char *text, ...);
 
 typedef void (*tUsersafeDeleteFile)(const char *path); // Has to be double null terminatad
 typedef void *(*tLoadFunctionFromDLL)(void *dll_handle, const char *function_name);
@@ -456,6 +458,7 @@ struct RayAPI {
 
   // FIXME: Switch over to homegrown solution.
   tTextAppend TextAppend;
+  tTextFormat TextFormat;
 
   tLoadDirectoryFiles LoadDirectoryFiles;
   tUnloadDirectoryFiles UnloadDirectoryFiles;

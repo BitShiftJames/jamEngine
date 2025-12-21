@@ -217,6 +217,7 @@ int main() {
   engineCTX.SetTraceLogLevel = (tSetTraceLogLevel)SetTraceLogLevel;
 
   engineCTX.TextAppend = (tTextAppend)TextAppend;
+  engineCTX.TextFormat = (tTextFormat)TextFormat;
 
   engineCTX.DrawLine3D = (tDrawLine3D)DrawLine3D;
   engineCTX.DrawPoint3D = (tDrawPoint3D)DrawPoint3D;

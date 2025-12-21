@@ -1,6 +1,7 @@
 
 #include "../jamLibrary/jamScene.h"
 #include "../jamLibrary/RayAPI.h"
+#include "../jamLibrary/jamMath.h"
 #include "../jamLibrary/jamUI.h"
 
 #include <cmath>
@@ -78,20 +79,7 @@ struct mainGameUI_data {
 
 #endif
 
-struct obj {
 
-  v4 quaternion;
-
-  v3 p1;
-  v3 p2;
-  v3 p3;
-  v3 origin;
-
-  Color_ p1_color;
-  Color_ p2_color;
-  Color_ p3_color;
-  Color_ origin_color;
-};
 #define PIE 3.14159
 
 v4 ZeroQuaternion() {
@@ -112,6 +100,23 @@ v4 ZeroQuaternion() {
   result.w = cosine_value;
 
   return result;
+};
+
+v4 NormalizeQuaternion(v4 Quaternion) {
+  v4 result = {};
+
+  f32 length = sqrtf(Quaternion.x * Quaternion.x + Quaternion.y * Quaternion.y + Quaternion.z * Quaternion.z);
+  if (length == 0.0f) {
+    length = 1.0f;
+  }
+  f32 Inverse_length = 1.0f / length;
+  result.x = Quaternion.x * Inverse_length;
+  result.y = Quaternion.y * Inverse_length;
+  result.z = Quaternion.z * Inverse_length;
+  result.w = Quaternion.w;
+  Assert(result.w < 1.0f);
+
+  return result; 
 };
 
 v4 AngleAxisQuaternion(f32 AngleDegrees, v3 Axis) {
@@ -167,23 +172,51 @@ v4 multiplyQuaternion(v4 A, v4 B) {
   result.z = A.w * B.z + A.x * B.y - A.y * B.x + A.z * B.z;
   result.w = A.w * B.w - A.x * B.x - A.y * B.y - A.z * B.z;
 
+  //result.w = A.x*B.x - A.y*B.y - A.z*B.z - A.w*B.w;
+  //result.x = A.x*B.y + A.y*B.x + A.z*B.w - A.w*B.z;
+  //result.y = A.x*B.z - A.y*B.w + A.z*B.x + A.w*B.y;
+  //result.z = A.x*B.z + A.y*B.z - A.z*B.y + A.w*B.x;
+
   return result;
 };
 
 v3 VectorRotate(v3 origin, v3 forward, v4 q) {
   v3 result = {};
-
-  v3 v = forward - origin;
-  result.x = v.x*(1 - 2*q.y*q.y - 2*q.z*q.z) + v.y*(2*q.x*q.y - 2*q.w*q.z) + v.z*(2*q.x*q.z + 2*q.w*q.y);
-  result.y = v.x*(2*q.x*q.y + 2*q.w*q.z) + v.y*(1 - 2*q.x*q.x - 2*q.z*q.z) + v.z*(2*q.y*q.z - 2*q.w*q.x);
-  result.z = v.x*(2*q.x*q.z - 2*q.w*q.y) + v.y*(2*q.y*q.z + 2*q.w*q.x) + v.z*(1 - 2*q.x*q.x - 2*q.y*q.y);
   
-  result.x += origin.x;
-  result.y += origin.y;
-  result.z += origin.z;
+  v3 v = forward - origin;
 
+  v3 u = {q.x, q.y, q.z};
+  f32 s = q.w;
+  
+  result.x = 2.0f * dot_v3(u, v) * u.x + (s * s - dot_v3(u, u)) * v.x + 2.0f * s * cross(u, v).x;
+  result.y = 2.0f * dot_v3(u, v) * u.y + (s * s - dot_v3(u, u)) * v.y + 2.0f * s * cross(u, v).y;
+  result.z = 2.0f * dot_v3(u, v) * u.z + (s * s - dot_v3(u, u)) * v.z + 2.0f * s * cross(u, v).z;
+
+  //vprime.x += origin.x;
+  //vprime.y += origin.y;
+  //vprime.z += origin.z;
+  
   return result;
 }
+
+struct obj {
+
+  v3 A;
+  v3 B;
+  
+  v3 A_normalized;
+  v3 A_projection;
+
+  f32 dot_product_result;
+
+  Color_ projection_point_color;
+
+  Color_ point_color;
+  Color_ line_color;
+
+  Color_ normalized_point_color;
+  Color_ normalized_line_color;
+};
 
 struct scene_data {
   Containers containerStorage;
@@ -195,18 +228,72 @@ extern "C" __declspec(dllexport) void scene_update(struct Scene *self, RayAPI *e
   scene_data *data = (scene_data *)self->data;
   
   v2 mousedelta = engineCTX->GetMouseDelta();
-  if (engineCTX->IsKeyPressedRepeat(K_X)) {
-    data->test_object.quaternion = multiplyQuaternion(data->test_object.quaternion, AngleAxisQuaternion(20, v3{1, 0, 0}));
+
+  v3 *A = &data->test_object.A;
+  v3 *B = &data->test_object.B;
+
+  if (engineCTX->IsKeyPressed(K_LEFT)) {
+    v3 *A = &data->test_object.A;
+
+    (*A).x--;
+    
+    data->test_object.A_normalized = *A / sqrtf(A->x * A->x + A->y * A->y + A->z * A->z);
+    data->test_object.dot_product_result = dot_v3(data->test_object.A_normalized, *B);
+    data->test_object.A_projection = data->test_object.dot_product_result * data->test_object.A_normalized;
   }
-  if (engineCTX->IsKeyPressedRepeat(K_Y)) {
-    data->test_object.quaternion = multiplyQuaternion(data->test_object.quaternion, AngleAxisQuaternion(20, v3{0, 1, 0}));
+
+  if (engineCTX->IsKeyPressed(K_RIGHT)) {
+    v3 *A = &data->test_object.A;
+
+    (*A).x++;
+    
+    data->test_object.A_normalized = *A / sqrtf(A->x * A->x + A->y * A->y + A->z * A->z);
+    data->test_object.dot_product_result = dot_v3(data->test_object.A_normalized, *B);
+    data->test_object.A_projection = data->test_object.dot_product_result * data->test_object.A_normalized;
   }
-  if (engineCTX->IsKeyPressedRepeat(K_Z)) {
-    data->test_object.quaternion = multiplyQuaternion(data->test_object.quaternion, AngleAxisQuaternion(20, v3{0, 0, 1}));
+
+  if (engineCTX->IsKeyPressed(K_UP)) {
+    v3 *A = &data->test_object.A;
+
+    (*A).z--;
+    
+    data->test_object.A_normalized = *A / sqrtf(A->x * A->x + A->y * A->y + A->z * A->z);
+    data->test_object.dot_product_result = dot_v3(data->test_object.A_normalized, *B);
+    data->test_object.A_projection = data->test_object.dot_product_result * data->test_object.A_normalized;
   }
-  
-  if (engineCTX->IsKeyPressed(K_R)) {
-    data->test_object.quaternion = ZeroQuaternion();
+
+  if (engineCTX->IsKeyPressed(K_DOWN)) {
+
+    (*A).z++;
+    
+    data->test_object.A_normalized = *A / sqrtf(A->x * A->x + A->y * A->y + A->z * A->z);
+    data->test_object.dot_product_result = dot_v3(data->test_object.A_normalized, *B);
+    data->test_object.A_projection = data->test_object.dot_product_result * data->test_object.A_normalized;
+  }
+
+  if (engineCTX->IsKeyPressed(K_W)) {
+    (*B).z--;
+
+    data->test_object.dot_product_result = dot_v3(data->test_object.A_normalized, *B);
+    data->test_object.A_projection = data->test_object.dot_product_result * data->test_object.A_normalized;
+  }
+  if (engineCTX->IsKeyPressed(K_A)) {
+    (*B).x--;
+
+    data->test_object.dot_product_result = dot_v3(data->test_object.A_normalized, *B);
+    data->test_object.A_projection = data->test_object.dot_product_result * data->test_object.A_normalized;
+  }
+  if (engineCTX->IsKeyPressed(K_S)) {
+    (*B).z++;
+
+    data->test_object.dot_product_result = dot_v3(data->test_object.A_normalized, *B);
+    data->test_object.A_projection = data->test_object.dot_product_result * data->test_object.A_normalized;
+  }
+  if (engineCTX->IsKeyPressed(K_D)) {
+    (*B).x++;
+
+    data->test_object.dot_product_result = dot_v3(data->test_object.A_normalized, *B);
+    data->test_object.A_projection = data->test_object.dot_product_result * data->test_object.A_normalized;
   }
 }
 
@@ -216,21 +303,25 @@ extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *e
   engineCTX->ClearBackground(Color_{0, 0, 0, 255});
 
   engineCTX->BeginMode3D(data->camera);
-    engineCTX->DrawSphere(VectorRotate(data->test_object.origin, 
-                                       data->test_object.p1, 
-                                       data->test_object.quaternion), 
-                          .05f, 5, 5, Color_{255, 255, 0, 255});
-    engineCTX->DrawSphere(VectorRotate(data->test_object.origin, 
-                                       data->test_object.p2, 
-                                       data->test_object.quaternion), 
-                          .05f, 5, 5, Color_{255, 255, 0, 255});
-    engineCTX->DrawSphere(VectorRotate(data->test_object.origin, 
-                                       data->test_object.p3, 
-                                       data->test_object.quaternion), 
-                          .05f, 5, 5, Color_{255, 255, 0, 255});
-    engineCTX->DrawSphere(data->test_object.origin, .1f, 5, 5, data->test_object.origin_color);
+    // I have no clue why this math is working the way it is.
+    engineCTX->DrawGrid(16, 1);
+    engineCTX->DrawCircle3D(v3{0, 0, 0}, 1.0f, v3{1.0, 0, 0}, 270, Color_{255, 255, 255, 255});
 
+    engineCTX->DrawCircle3D(data->test_object.A, .1f, v3{1.0, 0, 0}, 270, data->test_object.point_color);
+    engineCTX->DrawCircle3D(data->test_object.B, .1f, v3{1.0, 0, 0}, 270, data->test_object.point_color);
+
+    engineCTX->DrawCircle3D(data->test_object.A_normalized, .1f, v3{1.0, 0, 0}, 270, data->test_object.normalized_point_color);
+    engineCTX->DrawCircle3D(data->test_object.A_projection, .1f, v3{1.0, 0, 0}, 270, data->test_object.projection_point_color);
+
+    engineCTX->DrawLine3D(v3{0, 0, 0}, data->test_object.A, data->test_object.line_color);
+    engineCTX->DrawLine3D(v3{0, 0, 0}, data->test_object.B, data->test_object.line_color);
+    engineCTX->DrawLine3D(v3{0, 0, 0}, data->test_object.A_normalized, data->test_object.normalized_line_color);
+    
   engineCTX->EndMode3D();
+  
+  engineCTX->DrawText(engineCTX->GetFontDefault(), 
+                      engineCTX->TextFormat("dot product result: %f", data->test_object.dot_product_result), 
+                      v2{100, 20}, 20, 10, Color_{255,255,255,255});
 
   Render_container(&data->containerStorage, engineCTX);
 }
@@ -246,31 +337,28 @@ extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self, RayAPI *
   push_container(&data->containerStorage.count, &data->containerStorage.capacity, 
                  data->containerStorage.containers, v2{0.2f, 0.2f}, v2{100, 500}, Color_{0, 0, 0, 255}, engineCTX);
 
-  data->camera.position = v3{-20.0f, 5.0f, -20.0f};
-  data->camera.target = v3{1.0f, 0.0f, 0.0f};
+  data->camera.position = v3{0.0f, 1.0f, .1f};
+  data->camera.target = v3{0.0f, 0.0f, 0.0f};
   data->camera.up = v3{0.0f, 1.0f, 0.0f};
   data->camera.fovy = 15.0f;
-  data->camera.projection = 0;
+  data->camera.projection = 1;
 
-  data->test_object.origin = v3{1.0f, 0.0f, 0.0f};
-  data->test_object.p1 = v3{data->test_object.origin.x + 1.0f, data->test_object.origin.y, data->test_object.origin.z};
-  data->test_object.p2 = v3{data->test_object.origin.x, data->test_object.origin.y + 1.0f, data->test_object.origin.z};
-  data->test_object.p3 = v3{data->test_object.origin.x, data->test_object.origin.y, data->test_object.origin.z + 1.0f};
+  v3 *A = &data->test_object.A;
+  v3 *B = &data->test_object.B;
+  
+  *A = v3{1.0f, 0.0f, 4.0f};
+  *B = v3{4.0f, 0.0f, -1.0f};
+  
+  data->test_object.A_normalized = *A / sqrtf(A->x * A->x + A->y * A->y + A->z * A->z);
+  data->test_object.dot_product_result = dot_v3(data->test_object.A_normalized, *B);
+  data->test_object.A_projection = data->test_object.dot_product_result * data->test_object.A_normalized;
 
-  data->test_object.origin_color = Color_{255, 255, 255, 255};
-  data->test_object.p1_color = Color_{255, 0, 0, 255};
-  data->test_object.p2_color = Color_{0, 255, 0, 255};
-  data->test_object.p3_color = Color_{0, 0, 255, 255};
+  data->test_object.normalized_line_color = Color_{255, 0, 0, 255};
+  data->test_object.normalized_point_color = Color_{125, 0, 0, 255};
+  data->test_object.line_color  = Color_{125, 125, 255, 255};
+  data->test_object.point_color = Color_{0, 255, 0, 255};
 
-  data->test_object.quaternion = ZeroQuaternion();
-
-  v4 Q1 = AngleAxisQuaternion(250, v3{0, 1, 0});
-  v4 Q2 = AngleAxisQuaternion(260, v3{1, 0, 0});
-  v4 Q3 = multiplyQuaternion(Q1, Q2);
-  v4 Q4 = InverseQuaternion(Q3);
-
-   
-
+  data->test_object.projection_point_color = Color_{255, 255, 0, 255};
 }
 
 extern "C" __declspec(dllexport) void scene_onExit(struct Scene *self) {

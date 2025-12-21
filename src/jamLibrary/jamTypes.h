@@ -151,6 +151,15 @@ inline v2 operator*(v2 A, f32 Scalar) {
   return Result;
 }
 
+inline v2 operator*(f32 Scalar, v2 A) {
+  v2 Result = {};
+
+  Result.x = A.x * Scalar;
+  Result.y = A.y * Scalar;
+
+  return Result;
+}
+
 inline v2 operator/(v2 A, f32 Scalar) {
   v2 Result = {};
 
@@ -160,14 +169,6 @@ inline v2 operator/(v2 A, f32 Scalar) {
   return Result;
 }
 
-inline v2 operator*(f32 Scalar, v2 A) {
-  v2 Result = {};
-
-  Result.x = A.x * Scalar;
-  Result.y = A.y * Scalar;
-
-  return Result;
-}
 
 struct v3 {
   union {
@@ -185,12 +186,42 @@ struct v3 {
   };
 };
 
+inline v3 operator/(v3 A, f32 Scalar) {
+  v3 Result = {};
+
+  Result.x = A.x / Scalar;
+  Result.y = A.y / Scalar;
+  Result.z = A.z / Scalar;
+
+  return Result;
+}
+
 inline v3 operator-(v3 A, v3 B) {
   v3 Result = {};
 
   Result.x = A.x - B.x;
   Result.y = A.y - B.y;
   Result.z = A.z - B.z;
+
+  return Result;
+}
+
+inline v3 operator*(v3 A, f32 Scalar) {
+  v3 Result = {};
+
+  Result.x = A.x * Scalar;
+  Result.y = A.y * Scalar;
+  Result.z = A.z * Scalar;
+
+  return Result;
+}
+
+inline v3 operator*(f32 Scalar, v3 A) {
+  v3 Result = {};
+
+  Result.x = A.x * Scalar;
+  Result.y = A.y * Scalar;
+  Result.z = A.z * Scalar;
 
   return Result;
 }

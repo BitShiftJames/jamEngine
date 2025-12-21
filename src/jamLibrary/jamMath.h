@@ -82,6 +82,22 @@ inline f32 Inner(v2 A, v2 B) {
   return Result;
 }
 
+inline f32 dot_v3(v3 A, v3 B) {
+  f32 Result = A.x * B.x + A.y * B.y + A.z * B.z;
+
+  return Result;
+}
+
+inline v3 cross(v3 A, v3 B) {
+  v3 Result;
+
+  Result.x = A.y*B.z - A.z*B.y;
+  Result.y = A.z*B.x - A.x*B.z;
+  Result.z = A.x*B.y - A.y*B.x;
+
+  return Result;
+}
+
 inline f32 LengthSq(v2 A) {
   f32 Result = Inner(A, A);
   
