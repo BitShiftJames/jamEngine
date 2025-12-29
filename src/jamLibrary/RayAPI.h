@@ -420,7 +420,7 @@ typedef void (*tUsersafeDeleteFile)(const char *path); // Has to be double null 
 typedef void *(*tLoadFunctionFromDLL)(void *dll_handle, const char *function_name);
 typedef void *(*tLoadDLLFromPath)(const char *path);
 typedef void (*tUnloadDLLFromPath)(void *dll_handle);
-typedef void (*tBuild_scenes)(void);
+typedef void (*tBuild_scenes)(const char *path);
 typedef bool (*tDoesDirectoryExist)(const char *path);
 typedef bool (*tCreateDirectory)(const char *path);
 typedef FilePathList_ (*tSearchDynamicLibraries)(RayAPI *engineCTX, const char *path);

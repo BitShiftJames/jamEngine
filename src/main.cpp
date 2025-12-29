@@ -41,6 +41,7 @@ struct src_file_list {
 src_file_list Construct_source_list(FilePathList_ *List, memoryArena *src_file_memory, RayAPI *engineCTX) {
 
   memset(src_file_memory->memory, 0, src_file_memory->Used);
+  src_file_memory->Used = 0;
 
   src_file_list src_files = {};
   src_files.source_file_count = List->count;
@@ -57,15 +58,15 @@ src_file_list Construct_source_list(FilePathList_ *List, memoryArena *src_file_m
   return src_files;
 }
 
-void CheckSrcFiles(char *src_path, src_file_list *source_files, memoryArena *src_file_memory, RayAPI *engineCTX) {
+void CheckSrcFiles(char *src_path, char *build_path, src_file_list *source_files, memoryArena *src_file_memory, RayAPI *engineCTX) {
   FilePathList_ List = engineCTX->LoadDirectoryFiles(src_path, ".cpp", false);
-
   if (source_files->source_file_count != List.count) {
 
     // FIXME: Repeat code turn to function?
     *source_files = Construct_source_list(&List, src_file_memory, engineCTX);
-    
-    engineCTX->Build_scenes();
+    printf("Source File memory used %u vs Memory have %u\n", src_file_memory->Used, src_file_memory->Size);
+
+    engineCTX->Build_scenes(build_path);
     return;
   }
 
@@ -74,8 +75,10 @@ void CheckSrcFiles(char *src_path, src_file_list *source_files, memoryArena *src
 
       // FIXME: Repeat code turn to function?
       *source_files = Construct_source_list(&List, src_file_memory, engineCTX);
+      printf("Source File memory used %u vs Memory have %u\n", src_file_memory->Used, src_file_memory->Size);
+    
 
-      engineCTX->Build_scenes();
+      engineCTX->Build_scenes(build_path);
       return;
     }
 
@@ -83,8 +86,9 @@ void CheckSrcFiles(char *src_path, src_file_list *source_files, memoryArena *src
 
       // FIXME: Repeat code turn to function?
       *source_files = Construct_source_list(&List, src_file_memory, engineCTX);
+      printf("Source File memory used %u vs Memory have %u\n", src_file_memory->Used, src_file_memory->Size);
 
-      engineCTX->Build_scenes();
+      engineCTX->Build_scenes(build_path);
       return;
     }
   }
@@ -104,7 +108,7 @@ void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *dll_me
     // TOOD[Timing]: Once I have a good timer system I need to set a function on this check
     // to debounce because the build time is not instantaneous
     if (CheckLibraries(sceneTable, &List, engineCTX)) {
-      {
+      { 
         ActiveScene *list = sceneTable->list;
         while (list) {
           if (list->scene) {
@@ -137,7 +141,6 @@ void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *dll_me
         }
         temp_list = temp_list->next;
       }
-
     }
     engineCTX->UnloadDirectoryFiles(List);
 
@@ -389,15 +392,14 @@ int main() {
 
   AddScene(&sceneTable, (char *)"UIscene", &active_scene_list_memory, &scene_memory, Megabytes(4), &engineCTX);
   
-
   while (!engineCTX.WindowShouldClose()) {
 
-    CheckSrcFiles(src_path, &srcList, &src_file_memory, &engineCTX);
+    CheckSrcFiles(src_path, scene_build_dir, &srcList, &src_file_memory, &engineCTX);
     CheckForReload(scene_path, &sceneTable, &dll_memory, &engineCTX);
 
     {
-    Vector2 mousepos = GetMousePosition();
-    engineCTX.MousePosition = {mousepos.x, mousepos.y};
+      Vector2 mousepos = GetMousePosition();
+      engineCTX.MousePosition = {mousepos.x, mousepos.y};
     }
 
     {

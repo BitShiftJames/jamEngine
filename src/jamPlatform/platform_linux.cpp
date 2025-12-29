@@ -35,7 +35,7 @@ void recycle_delete(const char *path) {
 }
 
 void *load_a_library(const char *path) {
-  void *result = dlopen(path, RTLD_LAZY);
+  void *result = dlopen(path, RTLD_LOCAL | RTLD_LAZY);
   if (result == 0) {
     printf("Error loading a library\n");
     unhandled_error();
@@ -53,6 +53,7 @@ void *gimme_function(void *dll_handle, const char *function_name) {
 }
 
 void unload_a_library(void *dll_handle) {
+  printf("Unloaded a library at line %u", __LINE__);
   if (dlclose(dll_handle) != 0) {
     unhandled_error();
   }
@@ -61,12 +62,13 @@ void unload_a_library(void *dll_handle) {
 // Currently not implemented in the main engine.
 void build_scenes(const char *path) {
 
-  char buf[2048];
-
+  printf("path... %s\n", path);
+  char buffer[2048];
+  memset(buffer, 0, 2048);
   // Mhm hardcoded values.
-  snprintf(buf, 2048, "cd %s && cmake .. && make --makefile=Makefile", path);
-  printf("Buffer command being run... %s\n", buf);
-  if (system(buf) != 0) {
+  snprintf(buffer, 2048, "cd %s && cmake .. && make --makefile=Makefile", path);
+  printf("Buffer command being run... %s\n", buffer);
+  if (system(buffer) != 0) {
     unhandled_error();
   }
 }
