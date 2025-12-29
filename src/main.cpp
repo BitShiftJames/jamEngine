@@ -3,33 +3,18 @@
 #include "jamLibrary/jamTypes.h"
 #include "jamLibrary/jamScene.h"
 
-#include "platform_win32.h"
+#include "platform.h"
 #include "raylib.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-#if 0
-#define CURSOR_SIDE 32
-#define CURSOR_HALF_SIDE 16
-
-struct CursorObject {
-  Rectangle layer1;
-  Rectangle layer2;
-  Rectangle layer3;
-
-  // TODO: Settings.
-  Color layer1Tint = {0, 0, 0, 255};
-  Color layer2Tint = {255, 255, 255, 255};
-  Color layer3Tint = {100, 0, 0, 255};
-
-  Texture2D texture;
-
-  Cursor_inventory_information Inventory;
-};
-#endif
-
 bool CheckLibraries(SceneList *scene_list, FilePathList_ *file_path_list, RayAPI *engineCTX) {
+  if (!(scene_list && file_path_list && engineCTX)) {
+    return false;
+  }
+
   if (scene_list->scene_count != file_path_list->count) {
     return true;
   }
@@ -72,17 +57,15 @@ src_file_list Construct_source_list(FilePathList_ *List, memoryArena *src_file_m
   return src_files;
 }
 
-void CheckSrcFiles(char *src_path, char *build_path, src_file_list *source_files, memoryArena *src_file_memory, RayAPI *engineCTX) {
+void CheckSrcFiles(char *src_path, src_file_list *source_files, memoryArena *src_file_memory, RayAPI *engineCTX) {
   FilePathList_ List = engineCTX->LoadDirectoryFiles(src_path, ".cpp", false);
 
   if (source_files->source_file_count != List.count) {
 
     // FIXME: Repeat code turn to function?
     *source_files = Construct_source_list(&List, src_file_memory, engineCTX);
-
-    if (!system(build_path)) {
-      // TODO[Error handling];
-    } 
+    
+    engineCTX->Build_scenes();
     return;
   }
 
@@ -92,9 +75,7 @@ void CheckSrcFiles(char *src_path, char *build_path, src_file_list *source_files
       // FIXME: Repeat code turn to function?
       *source_files = Construct_source_list(&List, src_file_memory, engineCTX);
 
-      if (!system(build_path)) {
-        // TODO[Error handling];
-      } 
+      engineCTX->Build_scenes();
       return;
     }
 
@@ -103,9 +84,7 @@ void CheckSrcFiles(char *src_path, char *build_path, src_file_list *source_files
       // FIXME: Repeat code turn to function?
       *source_files = Construct_source_list(&List, src_file_memory, engineCTX);
 
-      if (!system(build_path)) {
-        // TODO[Error handling];
-      } 
+      engineCTX->Build_scenes();
       return;
     }
   }
@@ -115,51 +94,80 @@ void CheckSrcFiles(char *src_path, char *build_path, src_file_list *source_files
 
 void CheckForReload(char *scene_path, SceneList *sceneTable, memoryArena *dll_memory, RayAPI *engineCTX) {
 
-  FilePathList_ List = engineCTX->LoadDirectoryFiles(scene_path, ".dll", false);
+  if (engineCTX->DoesDirectoryExist(scene_path)) {
+    FilePathList_ List = engineCTX->SearchDynamicLibraries(engineCTX, scene_path);
+    
+    if (List.count == 0) {
+      return;
+    }
 
-  if (List.count == 0) {
-    return;
-  }
-  
-  // TOOD[Timing]: Once I have a good timer system I need to set a function on this check
-  // to debounce because the build time is not instantaneous
-  if (CheckLibraries(sceneTable, &List, engineCTX)) {
-
-    {
-      ActiveScene *list = sceneTable->list;
-      while (list) {
-        if (list->scene->onExit) {
-          list->scene->onExit(list->scene, engineCTX);
+    // TOOD[Timing]: Once I have a good timer system I need to set a function on this check
+    // to debounce because the build time is not instantaneous
+    if (CheckLibraries(sceneTable, &List, engineCTX)) {
+      {
+        ActiveScene *list = sceneTable->list;
+        while (list) {
+          if (list->scene) {
+            if (list->scene->onExit) {
+              list->scene->onExit(list->scene, engineCTX);
+            }
+          }
+          list = list->next;
         }
-        list = list->next;
       }
-    }
 
-    Unload_scenes(sceneTable, engineCTX);
+      Unload_scenes(sceneTable, engineCTX);
 
-    ActiveScene *temp_list = sceneTable->list;       
+      ActiveScene *temp_list = sceneTable->list;       
+      
+      memset(dll_memory->memory, 0, dll_memory->Used);
+      dll_memory->Used = 0;
 
-    memset(dll_memory->memory, 0, dll_memory->Used);
-    *sceneTable = Construct_scene_table(dll_memory, 128, scene_path, &List, engineCTX);
+      *sceneTable = Construct_scene_table(dll_memory, 128, scene_path, &List, engineCTX);
 
-    sceneTable->list = temp_list;
+      sceneTable->list = temp_list;
 
-    while (temp_list) {
-      temp_list->scene = GetScene(sceneTable, temp_list->scene_name);
-      temp_list->scene->arena = temp_list->arena;
-      if (temp_list->scene->onEnter) {
-        temp_list->scene->onEnter(temp_list->scene, engineCTX);
+      while (temp_list) {
+        temp_list->scene = GetScene(sceneTable, temp_list->scene_name);
+        if (temp_list->scene) {
+          temp_list->scene->arena = temp_list->arena;
+          if (temp_list->scene->onEnter) {
+            temp_list->scene->onEnter(temp_list->scene, engineCTX);
+          }
+        }
+        temp_list = temp_list->next;
       }
-      temp_list = temp_list->next;
+
     }
+    engineCTX->UnloadDirectoryFiles(List);
 
   }
-  engineCTX->UnloadDirectoryFiles(List);
+}
 
+void print_file_path_list(FilePathList_ *list) {
+  if (!list->capacity || !list->count) {
+    printf("There is nothing in this list");
+  }
+
+  for (u32 Index = 0; Index < list->count; Index++) {
+    printf("Index: %u, Path: %s\n", Index, list->paths[Index]);
+  }
 }
 
 int main() {
   RayAPI engineCTX = {};
+
+  engineCTX.UsersafeDelete = (tUsersafeDeleteFile)recycle_delete;
+  engineCTX.LoadDLLFromPath = (tLoadDLLFromPath)load_a_library;
+  engineCTX.UnloadDLLFromPath = (tUnloadDLLFromPath)unload_a_library;
+  engineCTX.LoadFunctionFromDLL = (tLoadFunctionFromDLL)gimme_function;
+  engineCTX.Build_scenes = (tBuild_scenes)build_scenes;
+  engineCTX.DoesDirectoryExist = (tDoesDirectoryExist)directory_exist;
+  engineCTX.CreateDirectory = (tCreateDirectory)create_a_directory;
+  engineCTX.SearchDynamicLibraries = (tSearchDynamicLibraries)search_dynamic_libraries;
+  engineCTX.IsValidLibraryExtension = (tIsValidLibraryExtension)IsValidLibraryExtension;
+  engineCTX.AppendLibraryExtension = (tAppendLibraryExtension)AppendLibraryExtension;
+
   engineCTX.ClearBackground = (tClearBackground)ClearBackground;
 
   engineCTX.BeginDrawing = (tBeginDrawing)BeginDrawing;
@@ -196,11 +204,6 @@ int main() {
   engineCTX.IsFileExtension = (tIsFileExtension)IsFileExtension;
   engineCTX.GetFileNameWithoutExt = (tGetFileNameWithoutExt)GetFileNameWithoutExt;
   engineCTX.GetFileModTime = (tGetFileModTime)GetFileModTime;
-  
-  engineCTX.UsersafeDelete = (tUsersafeDeleteFile)recycle_delete;
-  engineCTX.LoadDLLFromPath = (tLoadDLLFromPath)load_a_library;
-  engineCTX.UnloadDLLFromPath = (tUnloadDLLFromPath)unload_a_library;
-  engineCTX.LoadFunctionFromDLL = (tLoadFunctionFromDLL)gimme_function;
   
   engineCTX.InitWindow = (tInitWindow)InitWindow;
   engineCTX.CloseWindow = (tCloseWindow)CloseWindow;
@@ -319,58 +322,49 @@ int main() {
   engineCTX.SetTraceLogLevel(LOG_ALL);
   engineCTX.SetTargetFPS(30);
   
-
-  #if 0
-  CursorObject global_cursor = {};
-  global_cursor.texture = LoadTexture("../assets/Cursor.png");
-
-  global_cursor.layer1 = {0, 0, (f32)global_cursor.texture.width, (f32)((u32)(global_cursor.texture.height / 3))};
-  global_cursor.layer2 = {0, CURSOR_SIDE, (f32)global_cursor.texture.width, (f32)((u32)(global_cursor.texture.height / 3))};
-  global_cursor.layer3 = {0, CURSOR_SIDE * 2, (f32)global_cursor.texture.width, (f32)((u32)(global_cursor.texture.height / 3))};
-
-  Cursor_inventory_information CursorInventory = {};:
-  CursorInventory.dest_rect = JamRectMinDim(v2{0, 0}, v2{16, 16});
-  global_cursor.Inventory = CursorInventory;
-  #endif
-
-
   char *scene_path;
   char *src_path;
-  char *build_file_path;
+  char *scene_build_dir;
   SceneList sceneTable = {};
   src_file_list srcList = {};
   {
-    char *working_directory = (char *)engineCTX.GetWorkingDirectory();
     {
-      FilePathList_ List = engineCTX.LoadDirectoryFiles(working_directory, ".bat", true);
-      if (List.count == 1) {
-        int Text_Length = 0;
-        build_file_path = PushArray(&paths_memory, 2048, char);
-        engineCTX.TextAppend(build_file_path, "cd ", &Text_Length);
+      char *working_directory = (char *)engineCTX.GetWorkingDirectory();
+      int text_length = StringLength(working_directory);
+      engineCTX.TextAppend(working_directory, "/build", &text_length);
 
-        engineCTX.TextAppend(build_file_path, engineCTX.GetDirectoryPath(List.paths[0]), &Text_Length);
+      scene_build_dir = PushArray(&paths_memory, StringLength(working_directory) + 1, char);
+      StringCopy(scene_build_dir, working_directory);
+      
+      printf("Scene build directory %s\n", scene_build_dir);
 
-        engineCTX.TextAppend(build_file_path, " && ", &Text_Length);
-
-        engineCTX.TextAppend(build_file_path, List.paths[0], &Text_Length);
+      if (engineCTX.DoesDirectoryExist(scene_build_dir)) {
+        build_scenes(scene_build_dir);
       } else {
-        // Error handling.
+        engineCTX.CreateDirectory(scene_build_dir);
+        build_scenes(scene_build_dir);
       }
-      engineCTX.UnloadDirectoryFiles(List);
-
     }
 
+    char *working_directory = (char *)engineCTX.GetWorkingDirectory();
+    
     int text_length = StringLength(working_directory);
-    engineCTX.TextAppend(working_directory, "\\jamScenes", &text_length);
+    engineCTX.TextAppend(working_directory, "/jamScenes", &text_length);
+
 
     src_path = PushArray(&paths_memory, StringLength(working_directory) + 1, char);
     StringCopy(src_path, working_directory);
 
+    printf("Showing source path: %s\n", src_path);
+
     text_length = StringLength(working_directory);
-    engineCTX.TextAppend(working_directory, "\\compiled_scenes", &text_length);
+    engineCTX.TextAppend(working_directory, "/compiled_scenes", &text_length);
+
 
     scene_path = PushArray(&paths_memory, StringLength(working_directory) + 1, char);
     StringCopy(scene_path, working_directory);
+
+    printf("Showing scene path: %s\n", scene_path);
 
     {
       FilePathList_ List = engineCTX.LoadDirectoryFiles(src_path, ".cpp", false);
@@ -378,29 +372,27 @@ int main() {
       engineCTX.UnloadDirectoryFiles(List);
     }
 
-    // TODO [Polish]:
-    // This could be built to auto detect if the mod time changed from last known time.
-    // Which would require saving the mod time to disk.
-    if (build_file_path) {
-      if (!system(build_file_path)) {
-        // Error Handling...
-      }
-    }
-
     {
-      FilePathList_ List = engineCTX.LoadDirectoryFiles(scene_path, ".dll", false);
-      sceneTable = Construct_scene_table(&dll_memory, 128, scene_path, &List, &engineCTX);
-      engineCTX.UnloadDirectoryFiles(List);
+      if (engineCTX.DoesDirectoryExist(scene_path)) {
+        FilePathList_ List = engineCTX.SearchDynamicLibraries(&engineCTX, scene_path);
+
+        print_file_path_list(&List);
+        sceneTable = Construct_scene_table(&dll_memory, 128, scene_path, &List, &engineCTX);
+        engineCTX.UnloadDirectoryFiles(List);
+      } else {
+        engineCTX.CreateDirectory(scene_path);
+      }
     }
 
   }
 
 
-  AddScene(&sceneTable, (char *)"uiScene", &active_scene_list_memory, &scene_memory, Megabytes(4), &engineCTX);
+  AddScene(&sceneTable, (char *)"UIscene", &active_scene_list_memory, &scene_memory, Megabytes(4), &engineCTX);
   
+
   while (!engineCTX.WindowShouldClose()) {
 
-    CheckSrcFiles(src_path, build_file_path, &srcList, &src_file_memory, &engineCTX);
+    CheckSrcFiles(src_path, &srcList, &src_file_memory, &engineCTX);
     CheckForReload(scene_path, &sceneTable, &dll_memory, &engineCTX);
 
     {
@@ -432,8 +424,6 @@ int main() {
       }
     }
     EndDrawing();
-    //
-
   }
 
   CloseWindow();

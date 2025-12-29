@@ -3,6 +3,7 @@
 #include "RayAPI.h"
 #include "jamText.h"
 #include "jamTypes.h"
+#include <cstdio>
 
 Scene *GetScene(SceneList *sceneList, char *name) {
   Scene *result = 0;
@@ -56,16 +57,23 @@ void AddScene(SceneList *sceneList, char *name, memoryArena *active_scene_memory
               memoryArena *sceneMemory, u64 size, RayAPI *engineCTX) {
   Scene *currScene = GetScene(sceneList, name);
 
-  // Could do a memory allocation here.
-  currScene->arena = PushStruct(sceneMemory, memoryArena);
-  currScene->arena->Size = size;
-  currScene->arena->memory = (u8 *)sceneMemory->memory + sceneMemory->Used;
-  sceneMemory->Used += currScene->arena->Size;
+  // FIXME: This could be the wrong behavior yet I don't think
+  // it is because you don't want to push memory if the 
+  // scene you are looking for does not exist
+  printf("Did we get a scene: %p\n", currScene);
 
-  InsertActiveScene(sceneList, active_scene_memory, currScene, name);
+  if (currScene) {
+    // Could do a memory allocation here.
+    currScene->arena = PushStruct(sceneMemory, memoryArena);
+    currScene->arena->Size = size;
+    currScene->arena->memory = (u8 *)sceneMemory->memory + sceneMemory->Used;
+    sceneMemory->Used += currScene->arena->Size;
 
-  if (currScene->onEnter) {
-    currScene->onEnter(currScene, engineCTX);
+    InsertActiveScene(sceneList, active_scene_memory, currScene, name);
+
+    if (currScene->onEnter) {
+      currScene->onEnter(currScene, engineCTX);
+    }
   }
 }
 
@@ -107,11 +115,11 @@ SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_
   sceneTable.scene_name = PushArray(arena, max_scenes, char *);
   sceneTable.scene_path = PushArray(arena, max_scenes, char *);
   sceneTable.scene_mod_time = PushArray(arena, max_scenes, u64);
-  
   sceneTable.scene_count = list->count;
-
-  for (u32 i = 0; i < list->count; i++) {
-    if (engineCTX->IsFileExtension((list->paths[i]), ".dll") 
+  
+  printf("[SCENE_TABLE]: Scene count %u\n", sceneTable.scene_count);
+  for (u32 i = 0; i < sceneTable.scene_count; i++) {
+    if (engineCTX->IsValidLibraryExtension(list->paths[i], engineCTX) 
         && !TextEqual(engineCTX->GetFileNameWithoutExt(list->paths[i]), "raylib")) {
 
       s32 path_text_length = StringLength((char *)list->paths[i]) + 1;
@@ -123,20 +131,24 @@ SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_
       StringCopy(currPath, (char *)list->paths[i]);
       StringCopy(scene_name_text, engineCTX->GetFileNameWithoutExt(list->paths[i]));
 
+      printf("[SCENE_TABLE]: Scene Path %s\n", currPath);
+      printf("[SCENE_TABLE]: Scene Name %s\n", scene_name_text);
+
       sceneTable.scene_name[sceneTable.scene_count] = scene_name_text;
 
       char *copy_library = (char *)engineCTX->GetFileNameWithoutExt(currPath);
 
       {
       s32 text_length = StringLength(copy_library);
-      engineCTX->TextAppend(copy_library, "_temp.dll", &text_length);
+      engineCTX->TextAppend(copy_library, "_temp", &text_length);
+      engineCTX->AppendLibraryExtension(copy_library, &text_length, engineCTX);
       }
 
       char *copy_path = (char *)engineCTX->GetDirectoryPath(currPath);
 
       {
       s32 text_length = StringLength(copy_path);
-      engineCTX->TextAppend(copy_path, "\\temp\\", &text_length);
+      engineCTX->TextAppend(copy_path, "/temp/", &text_length);
       text_length = StringLength(copy_path);
       engineCTX->TextAppend(copy_path, copy_library, &text_length);
 

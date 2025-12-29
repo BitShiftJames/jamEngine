@@ -328,11 +328,6 @@ typedef long (*tGetFileModTime)(const char *fileName);
 typedef void (*tTextAppend)(char *text, const char *append, int *position);
 typedef const char *(*tTextFormat)(const char *text, ...);
 
-typedef void (*tUsersafeDeleteFile)(const char *path); // Has to be double null terminatad
-typedef void *(*tLoadFunctionFromDLL)(void *dll_handle, const char *function_name);
-typedef void *(*tLoadDLLFromPath)(const char *path);
-typedef void (*tUnloadDLLFromPath)(void *dll_handle);
-
 typedef void *(*tMemAlloc)(u32 size);
 typedef void *(*tMemRealloc)(void *ptr, u32 size);
 typedef void (*tMemFree)(void *ptr);
@@ -419,6 +414,18 @@ typedef const char *(*tGetKeyName)(s32 key);
 typedef void (*tSetExitKey)(s32 key);
 
 typedef void (*tUpdateCamera)(Camera3D_ *camera, v3 movement, v3 rotation, f32 zoom);
+
+// platform specific functions.
+typedef void (*tUsersafeDeleteFile)(const char *path); // Has to be double null terminatad
+typedef void *(*tLoadFunctionFromDLL)(void *dll_handle, const char *function_name);
+typedef void *(*tLoadDLLFromPath)(const char *path);
+typedef void (*tUnloadDLLFromPath)(void *dll_handle);
+typedef void (*tBuild_scenes)(void);
+typedef bool (*tDoesDirectoryExist)(const char *path);
+typedef bool (*tCreateDirectory)(const char *path);
+typedef FilePathList_ (*tSearchDynamicLibraries)(RayAPI *engineCTX, const char *path);
+typedef bool (*tIsValidLibraryExtension)(const char *path, RayAPI *engineCTX);
+typedef void (*tAppendLibraryExtension)(char *buf, int *text_length, RayAPI *engineCTX);
 
 struct Style {
   Font_ font;
@@ -562,6 +569,13 @@ struct RayAPI {
   tSetExitKey SetExitKey;
 
   tUpdateCamera UpdateCamera;
+  tBuild_scenes Build_scenes;
+  tDoesDirectoryExist DoesDirectoryExist;
+  tCreateDirectory CreateDirectory;
+  tSearchDynamicLibraries SearchDynamicLibraries;
+  tIsValidLibraryExtension IsValidLibraryExtension;
+  tAppendLibraryExtension AppendLibraryExtension;
+
 };
 
 #endif 
