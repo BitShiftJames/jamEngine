@@ -297,6 +297,15 @@ int main() {
 
   engineCTX.UpdateCamera = (tUpdateCamera)UpdateCamera;
 
+  engineCTX.ShowCursor = (tShowCursor)ShowCursor;
+  engineCTX.HideCursor = (tHideCursor)HideCursor;
+  engineCTX.IsCursorHidden = (tIsCursorHidden)IsCursorHidden;
+  engineCTX.EnableCursor = (tEnableCursor)EnableCursor;
+  engineCTX.DisableCursor = (tDisableCursor)DisableCursor;
+  engineCTX.IsCursorOnScreen = (tIsCursorOnScreen)IsCursorOnScreen;
+  
+  engineCTX.GetFrameTime = (tGetFrameTime)GetFrameTime;
+
   // TODO[Refactor]: Have scenes suballocate out of a bigger memory block
   memoryArena scene_memory = {};
   scene_memory.Size = Megabytes(200);

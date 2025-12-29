@@ -415,6 +415,15 @@ typedef void (*tSetExitKey)(s32 key);
 
 typedef void (*tUpdateCamera)(Camera3D_ *camera, v3 movement, v3 rotation, f32 zoom);
 
+typedef void (*tShowCursor)(void);
+typedef void (*tHideCursor)(void);
+typedef bool (*tIsCursorHidden)(void);
+typedef void (*tEnableCursor)(void);
+typedef void (*tDisableCursor)(void);
+typedef bool (*tIsCursorOnScreen)(void);
+
+typedef f32 (*tGetFrameTime)(void);
+
 // platform specific functions.
 typedef void (*tUsersafeDeleteFile)(const char *path); // Has to be double null terminatad
 typedef void *(*tLoadFunctionFromDLL)(void *dll_handle, const char *function_name);
@@ -435,6 +444,8 @@ struct Style {
 
 struct RayAPI {
   v2 ScreenSize;
+  v2 HalfScreenSize;
+
   v2 MousePosition;
 
   Style defaultStyle;
@@ -576,6 +587,14 @@ struct RayAPI {
   tIsValidLibraryExtension IsValidLibraryExtension;
   tAppendLibraryExtension AppendLibraryExtension;
 
+  tShowCursor ShowCursor;
+  tHideCursor HideCursor;
+  tIsCursorHidden IsCursorHidden;
+  tEnableCursor EnableCursor;
+  tDisableCursor DisableCursor;
+  tIsCursorOnScreen IsCursorOnScreen;
+  
+  tGetFrameTime GetFrameTime;
 };
 
 #endif 

@@ -7,7 +7,11 @@
 #include "RayAPI.h"
 
 #define MAX_FILE_PATH 1024
-
+#ifndef Scene_API
+  #if (_WIN32)
+    #define Scene_API extern "C" __declspec(dllexport)
+  #endif
+#endif
 typedef void (*sceneUpdate)(struct Scene *self, RayAPI *engineCTX);
 typedef void (*sceneRender)(struct Scene *self, RayAPI *engineCTX);
 typedef void (*sceneOnEnter)(struct Scene *self, RayAPI *engineCTX);
