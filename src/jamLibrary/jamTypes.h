@@ -186,12 +186,24 @@ struct v3 {
   };
 };
 
-inline v3 operator/(v3 A, f32 Scalar) {
+inline bool operator==(v3 A, v3 B) {
+  return A.x == B.x &&
+         A.y == B.y &&
+         A.z == B.z;
+}
+
+inline bool operator!=(v3 A, v3 B) {
+  return A.x != B.x &&
+         A.y != B.y &&
+         A.z != B.z;
+}
+
+inline v3 operator+(v3 A, v3 B) {
   v3 Result = {};
 
-  Result.x = A.x / Scalar;
-  Result.y = A.y / Scalar;
-  Result.z = A.z / Scalar;
+  Result.x = A.x + B.x;
+  Result.y = A.y + B.y;
+  Result.z = A.z + B.z;
 
   return Result;
 }
@@ -204,6 +216,58 @@ inline v3 operator-(v3 A, v3 B) {
   Result.z = A.z - B.z;
 
   return Result;
+}
+
+inline v3 operator-(v3 A, f32 Scaler) {
+  v3 Result = {};
+
+  Result.x = A.x - Scaler;
+  Result.y = A.y - Scaler;
+  Result.z = A.z - Scaler;
+
+  return Result;
+}
+
+inline v3 operator*(v3 A, v3 B) {
+  v3 Result = {};
+
+  Result.x = A.x * B.x;
+  Result.y = A.y * B.y;
+  Result.z = A.z * B.z;
+
+  return Result;
+}
+
+inline v3& operator*=(v3& A, f32 Scalar) {
+  A.x *= Scalar;
+  A.y *= Scalar;
+  A.z *= Scalar;
+
+  return A;
+}
+
+inline v3& operator*=(v3& A, v3 B) {
+  A.x *= B.x;
+  A.y *= B.y;
+  A.z *= B.z;
+
+  return A;
+}
+
+inline v3& operator+=(v3& A, v3 B) {
+  A.x += B.x;
+  A.y += B.y;
+  A.z += B.z;
+
+  return A;
+}
+
+inline v3& operator+=(v3& a, f32 b) {
+  a.x += b;
+  a.y += b;
+  a.z += b;
+
+  return a;
 }
 
 inline v3 operator*(v3 A, f32 Scalar) {
@@ -222,6 +286,16 @@ inline v3 operator*(f32 Scalar, v3 A) {
   Result.x = A.x * Scalar;
   Result.y = A.y * Scalar;
   Result.z = A.z * Scalar;
+
+  return Result;
+}
+
+inline v3 operator/(v3 A, f32 Scalar) {
+  v3 Result = {};
+
+  Result.x = A.x / Scalar;
+  Result.y = A.y / Scalar;
+  Result.z = A.z / Scalar;
 
   return Result;
 }

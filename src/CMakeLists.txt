@@ -15,6 +15,8 @@ if (WIN32)
   set_target_properties(jamLibrary PROPERTIES
       IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/jamLibrary.lib"
       INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/jamLibrary/"
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/jamScenes/compiled_scenes
+      LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/jamScenes/compiled_scenes
       ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/jamScenes/compiled_scenes
       ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/jamScenes/compiled_scenes
   )
