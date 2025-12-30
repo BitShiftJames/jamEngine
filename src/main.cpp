@@ -170,6 +170,7 @@ int main() {
   engineCTX.SearchDynamicLibraries = (tSearchDynamicLibraries)search_dynamic_libraries;
   engineCTX.IsValidLibraryExtension = (tIsValidLibraryExtension)IsValidLibraryExtension;
   engineCTX.AppendLibraryExtension = (tAppendLibraryExtension)AppendLibraryExtension;
+  engineCTX.AppendPathSeperator = (tAppendPathSeperator)AppendPathSeperator;
 
   engineCTX.ClearBackground = (tClearBackground)ClearBackground;
 
@@ -213,6 +214,7 @@ int main() {
   engineCTX.WindowShouldClose = (tWindowShouldClose)WindowShouldClose;
   engineCTX.GetScreenWidth = (tGetScreenWidth)GetScreenWidth;
   engineCTX.GetScreenHeight = (tGetScreenHeight)GetScreenHeight;
+  engineCTX.IsWindowResized = (tIsWindowResized)IsWindowResized;
 
   engineCTX.MemAlloc = (tMemAlloc)MemAlloc;
   engineCTX.MemRealloc = (tMemRealloc)MemRealloc;
@@ -343,7 +345,8 @@ int main() {
     {
       char *working_directory = (char *)engineCTX.GetWorkingDirectory();
       int text_length = StringLength(working_directory);
-      engineCTX.TextAppend(working_directory, "/build", &text_length);
+      engineCTX.AppendPathSeperator(working_directory, &text_length, &engineCTX);
+      engineCTX.TextAppend(working_directory, "build", &text_length);
 
       scene_build_dir = PushArray(&paths_memory, StringLength(working_directory) + 1, char);
       StringCopy(scene_build_dir, working_directory);
@@ -361,7 +364,8 @@ int main() {
     char *working_directory = (char *)engineCTX.GetWorkingDirectory();
     
     int text_length = StringLength(working_directory);
-    engineCTX.TextAppend(working_directory, "/jamScenes", &text_length);
+    engineCTX.AppendPathSeperator(working_directory, &text_length, &engineCTX);
+    engineCTX.TextAppend(working_directory, "jamScenes", &text_length);
 
 
     src_path = PushArray(&paths_memory, StringLength(working_directory) + 1, char);
@@ -370,7 +374,8 @@ int main() {
     printf("Showing source path: %s\n", src_path);
 
     text_length = StringLength(working_directory);
-    engineCTX.TextAppend(working_directory, "/compiled_scenes", &text_length);
+    engineCTX.AppendPathSeperator(working_directory, &text_length, &engineCTX);
+    engineCTX.TextAppend(working_directory, "compiled_scenes", &text_length);
 
 
     scene_path = PushArray(&paths_memory, StringLength(working_directory) + 1, char);
@@ -399,12 +404,20 @@ int main() {
   }
 
 
-  AddScene(&sceneTable, (char *)"UIscene", &active_scene_list_memory, &scene_memory, Megabytes(4), &engineCTX);
+  AddScene(&sceneTable, (char *)"camera_rotation", &active_scene_list_memory, &scene_memory, Megabytes(4), &engineCTX);
+
+  engineCTX.ScreenSize = {(f32)engineCTX.GetScreenWidth(), (f32)engineCTX.GetScreenHeight()};
+  engineCTX.HalfScreenSize = engineCTX.ScreenSize / 2;
   
   while (!engineCTX.WindowShouldClose()) {
 
     CheckSrcFiles(src_path, scene_build_dir, &srcList, &src_file_memory, &engineCTX);
     CheckForReload(scene_path, &sceneTable, &dll_memory, &engineCTX);
+  
+    if (engineCTX.IsWindowResized()) {
+      engineCTX.ScreenSize = {(f32)engineCTX.GetScreenHeight(), (f32)engineCTX.GetScreenHeight()};
+      engineCTX.HalfScreenSize = engineCTX.ScreenSize / 2;
+    }
 
     {
       Vector2 mousepos = GetMousePosition();

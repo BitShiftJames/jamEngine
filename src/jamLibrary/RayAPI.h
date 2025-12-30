@@ -337,6 +337,7 @@ typedef void (*tCloseWindow)(void);
 typedef bool (*tWindowShouldClose)(void);
 typedef int (*tGetScreenWidth)(void);
 typedef int (*tGetScreenHeight)(void);
+typedef bool (*tIsWindowResized)(void);
 
 typedef void (*tSetConfigFlags)(u32 flags);
 typedef void (*tSetTraceLogLevel)(s32 logLevel);
@@ -435,6 +436,7 @@ typedef bool (*tCreateDirectory)(const char *path);
 typedef FilePathList_ (*tSearchDynamicLibraries)(RayAPI *engineCTX, const char *path);
 typedef bool (*tIsValidLibraryExtension)(const char *path, RayAPI *engineCTX);
 typedef void (*tAppendLibraryExtension)(char *buf, int *text_length, RayAPI *engineCTX);
+typedef void (*tAppendPathSeperator)(char *buf, int *text_length, RayAPI *engineCTX);
 
 struct Style {
   Font_ font;
@@ -500,6 +502,7 @@ struct RayAPI {
   tWindowShouldClose WindowShouldClose;
   tGetScreenWidth GetScreenWidth;
   tGetScreenHeight GetScreenHeight;
+  tIsWindowResized IsWindowResized;
 
   tMemAlloc MemAlloc; 
   tMemRealloc MemRealloc;
@@ -580,12 +583,14 @@ struct RayAPI {
   tSetExitKey SetExitKey;
 
   tUpdateCamera UpdateCamera;
+
   tBuild_scenes Build_scenes;
   tDoesDirectoryExist DoesDirectoryExist;
   tCreateDirectory CreateDirectory;
   tSearchDynamicLibraries SearchDynamicLibraries;
   tIsValidLibraryExtension IsValidLibraryExtension;
   tAppendLibraryExtension AppendLibraryExtension;
+  tAppendPathSeperator AppendPathSeperator;
 
   tShowCursor ShowCursor;
   tHideCursor HideCursor;

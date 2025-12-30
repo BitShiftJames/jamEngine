@@ -1,6 +1,7 @@
 /build/
 src/.vs/
 
+src/Lumaria
 src/*.exe
 src/*.pdb
 src/*.out
@@ -12,6 +13,7 @@ src/jamDebug.cpp
 src/jamScenes/compiled_scenes/
 
 src/scene_build/
+src/build
 src/external/
 
 src/jamLibrary.lib

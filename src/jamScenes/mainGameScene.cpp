@@ -31,7 +31,7 @@ struct mainGame_data {
 };
 #endif
 
-extern "C" void scene_onEnter(struct Scene *self) {
+SceneAPI void scene_onEnter(struct Scene *self) {
   ClearAnArena(self->arena);
 
   #if 0 
@@ -109,7 +109,7 @@ extern "C" void scene_onEnter(struct Scene *self) {
 
 }
 
- extern "C" void scene_update(struct Scene *self) {
+ SceneAPI void scene_update(struct Scene *self) {
   #if 0
   mainGame_data *gameData = (mainGame_data *)self->data;
 
@@ -168,7 +168,7 @@ extern "C" void scene_onEnter(struct Scene *self) {
   #endif
 }
 
-extern "C" void scene_render(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
   #if 0
   mainGame_data *gameData = (mainGame_data *)self->data;
 
@@ -224,6 +224,6 @@ extern "C" void scene_render(struct Scene *self, RayAPI *engineCTX) {
   #endif
 }
 
-extern "C" void scene_onExit(struct Scene *self) {
+SceneAPI void scene_onExit(struct Scene *self) {
 }
 

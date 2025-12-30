@@ -35,7 +35,7 @@ struct scene_data {
 void ToWorldSpace(v3 point, v3 origin, v3 basis_a, v3 basis_b) {
 }
 
-extern "C" __declspec(dllexport) void scene_update(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
   
   v2 mousedelta = engineCTX->GetMouseDelta();
@@ -71,7 +71,7 @@ extern "C" __declspec(dllexport) void scene_update(struct Scene *self, RayAPI *e
 
 }
 
-extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
   engineCTX->ClearBackground(Color_{0, 0, 0, 255});
@@ -103,7 +103,7 @@ extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *e
   Render_container(&data->containerStorage, engineCTX);
 }
 
-extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   printf("On Enter Logic");
 
   self->data = PushStruct(self->arena, scene_data);
@@ -136,7 +136,7 @@ extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self, RayAPI *
 
 }
 
-extern "C" __declspec(dllexport) void scene_onExit(struct Scene *self) {
+SceneAPI void scene_onExit(struct Scene *self) {
   memset(self->arena->memory, 0, self->arena->Used);
 }
 

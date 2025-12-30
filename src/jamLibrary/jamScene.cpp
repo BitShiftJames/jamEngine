@@ -147,8 +147,12 @@ SceneList Construct_scene_table(memoryArena *arena, u32 max_scenes, char *scene_
       char *copy_path = (char *)engineCTX->GetDirectoryPath(currPath);
 
       {
+
       s32 text_length = StringLength(copy_path);
-      engineCTX->TextAppend(copy_path, "/temp/", &text_length);
+      engineCTX->AppendPathSeperator(copy_path, &text_length, engineCTX);
+      engineCTX->TextAppend(copy_path, "temp", &text_length);
+      engineCTX->AppendPathSeperator(copy_path, &text_length, engineCTX);
+
       text_length = StringLength(copy_path);
       engineCTX->TextAppend(copy_path, copy_library, &text_length);
 

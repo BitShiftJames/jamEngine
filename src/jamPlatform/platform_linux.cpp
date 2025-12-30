@@ -59,9 +59,7 @@ void unload_a_library(void *dll_handle) {
   }
 }
 
-// Currently not implemented in the main engine.
 void build_scenes(const char *path) {
-
   printf("path... %s\n", path);
   char buffer[2048];
   memset(buffer, 0, 2048);
@@ -103,6 +101,10 @@ bool create_a_directory(const char *path) {
   }
 
   return result;
+}
+
+void AppendPathSeperator(char *buf, int *text_length, RayAPI *engineCTX) {
+  engineCTX->TextAppend(buf, "/", text_length);
 }
 
 bool directory_exist(const char *path) {

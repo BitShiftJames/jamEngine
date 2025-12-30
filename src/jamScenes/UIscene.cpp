@@ -221,15 +221,15 @@ struct obj {
 struct scene_data {
 };
 
-extern "C" void scene_update(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
   
 }
 
-extern "C" void scene_render(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
-  engineCTX->ClearBackground(Color_{0, 255, 255, 255});
+  engineCTX->ClearBackground(Color_{255, 0, 0, 255});
     
   engineCTX->DrawText(engineCTX->GetFontDefault(), 
                       engineCTX->TextFormat("Success"), 
@@ -237,13 +237,13 @@ extern "C" void scene_render(struct Scene *self, RayAPI *engineCTX) {
 
 }
 
-extern "C" void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
 
   self->data = PushStruct(self->arena, scene_data);
   scene_data *data = (scene_data *)self->data;
 
 }
 
-extern "C" void scene_onExit(struct Scene *self) {
+SceneAPI void scene_onExit(struct Scene *self) {
   memset(self->arena->memory, 0, self->arena->Used);
 }

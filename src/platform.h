@@ -13,6 +13,7 @@ bool create_a_directory(const char *path);
 bool directory_exist(const char *path);
 FilePathList_ search_dynamic_libraries(RayAPI *engineCTX, const char *path);
 bool IsValidLibraryExtension(const char *path, RayAPI *engineCTX);
+void AppendPathSeperator(char *buf, int *text_length, RayAPI *engineCTX);
 void AppendLibraryExtension(char *buf, int *text_length, RayAPI *engineCTX);
 
 #endif 

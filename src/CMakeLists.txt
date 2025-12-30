@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.1.1)
-project(Lumaria)
+project(Scene_compile)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_SOURCE_DIR}/jamScenes/compiled_scenes)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/jamScenes/compiled_scenes)

@@ -183,7 +183,7 @@ void UpdateCamera(Camera3D_ *camera, v3 look_rotation, v3 movement_delta, f32 de
 
 }
 
-extern "C" __declspec(dllexport) void scene_update(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
   v2 mouseDelta = engineCTX->GetMouseDelta();
@@ -226,7 +226,7 @@ extern "C" __declspec(dllexport) void scene_update(struct Scene *self, RayAPI *e
 
 }
 
-extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
   engineCTX->ClearBackground(Color_{0, 0, 0, 255});
@@ -257,7 +257,7 @@ extern "C" __declspec(dllexport) void scene_render(struct Scene *self, RayAPI *e
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{10, 5}, Color_{255, 255, 255, 255});
 }
 
-extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   self->data = PushStruct(self->arena, scene_data);
 
   scene_data *data = (scene_data *)self->data;
@@ -281,6 +281,6 @@ extern "C" __declspec(dllexport) void scene_onEnter(struct Scene *self, RayAPI *
 
 }
 
-extern "C" __declspec(dllexport) void scene_onExit(struct Scene *self, RayAPI *engineCTX) {
+SceneAPI void scene_onExit(struct Scene *self, RayAPI *engineCTX) {
   memset(self->arena->memory, 0, self->arena->Used);
 }

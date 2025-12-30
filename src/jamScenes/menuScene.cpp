@@ -155,7 +155,7 @@ static void DeleteAFile(char *file_path) {
 }
 #endif
 
-extern "C" void scene_update(struct Scene *self) {
+SceneAPI void scene_update(struct Scene *self) {
   int a = 2;
   #if 0
   mainmenu_data *menuData = (mainmenu_data *)self->data;
@@ -212,7 +212,7 @@ extern "C" void scene_update(struct Scene *self) {
   #endif
 }
 
-extern "C" void scene_render(struct Scene *self) {
+SceneAPI void scene_render(struct Scene *self) {
   int a = 2;
   #if 0
   ClearBackground(SKYBLUE);
@@ -277,7 +277,7 @@ extern "C" void scene_render(struct Scene *self) {
   #endif
 }
 
-extern "C" void scene_onEnter(struct Scene *self) {
+SceneAPI void scene_onEnter(struct Scene *self) {
   int a = 2;
   #if 0
   memset(self->arena->memory, 0, self->arena->Size);
@@ -348,6 +348,6 @@ extern "C" void scene_onEnter(struct Scene *self) {
   #endif
 }
 
-extern "C" void scene_onExit(struct Scene *self) {
+SceneAPI void scene_onExit(struct Scene *self) {
   int a = 2;
 }
