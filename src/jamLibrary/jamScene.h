@@ -12,7 +12,7 @@
   #ifdef _WIN32
       #define SceneAPI extern "C" __declspec(dllexport)
   #else
-      #define Scene_API extern "C"
+      #define SceneAPI extern "C"
   #endif
 #endif
 
