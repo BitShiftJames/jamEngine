@@ -22,8 +22,13 @@ struct scene_data {
   construction_block *construction_blocks;
 
   bool DrawRay;
+  bool RayHit;
   Ray_ RayToDraw;
   Ray_ RayToFollow;
+
+  v3 p1;
+  v3 p2;
+
 };
 
 v4 ZeroQuaternion() {
@@ -187,6 +192,16 @@ void UpdateCamera(Camera3D_ *camera, v3 look_rotation, v3 movement_delta, f32 de
 
 }
 
+inline bool GetRayHit(Ray_ Ray, v3 center, v3 dim, RayAPI *engineCTX) {
+  bool result = false;
+
+  BoundingBox_ hitBoundingBox = {center - (dim / 2), center + (dim / 2)};
+  RayCollision_ collision = engineCTX->GetRayCollisionBox(Ray, hitBoundingBox);
+  result = collision.hit;
+
+  return result;
+}
+
 SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
@@ -238,9 +253,14 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   } else {
     data->DrawRay = false;
   }
+  
+  for (u32 Index = 0; Index < data->count; Index++) {
+    construction_block currConstructionBlock = data->construction_blocks[Index];
+    if (currConstructionBlock.selected && data->DrawRay) {
+        data->RayHit = GetRayHit(data->RayToFollow, currConstructionBlock.min, v3{1.0f, 1.0f, 1.0f}, engineCTX);
+    }
 
-
-
+  }
 }
 
 SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
@@ -253,12 +273,18 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
       construction_block currConstructionBlock = data->construction_blocks[Index];
       
       if (currConstructionBlock.selected) {
-        engineCTX->DrawWireframeCube(currConstructionBlock.min, currConstructionBlock.max, WHITE);
+        Color_ selected_box_color = WHITE;
+        if (data->RayHit) {
+          selected_box_color = Color_{255, 0, 0, 255};
+        }
+        engineCTX->DrawWireframeCube(currConstructionBlock.min, currConstructionBlock.max, selected_box_color);
         v3 SpherePosition = v3{(currConstructionBlock.min.x),
                                (currConstructionBlock.min.y),
                                (currConstructionBlock.min.z)};
         engineCTX->DrawWireframeCube(SpherePosition, v3{1.0f, 1.0f, 1.0f}, WHITE);
         engineCTX->DrawSphere(SpherePosition, 0.1f, 12, 12, WHITE);
+        engineCTX->DrawSphere(data->p1, 0.075f, 12, 12, Color_{0, 0, 255, 255});
+        engineCTX->DrawSphere(data->p2, 0.075f, 12, 12, Color_{0, 255, 0, 255});
       } else {
         engineCTX->DrawCube(currConstructionBlock.min, currConstructionBlock.max, WHITE);
       }
