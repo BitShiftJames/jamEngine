@@ -308,6 +308,9 @@ int main() {
   
   engineCTX.GetFrameTime = (tGetFrameTime)GetFrameTime;
 
+  engineCTX.GetRayCollisionBox = (tGetRayCollisionBox)GetRayCollisionBox;
+  engineCTX.ScreenToWorldRay = (tScreenToWorldRay)GetScreenToWorldRay;
+
   // TODO[Refactor]: Have scenes suballocate out of a bigger memory block
   memoryArena scene_memory = {};
   scene_memory.Size = Megabytes(200);

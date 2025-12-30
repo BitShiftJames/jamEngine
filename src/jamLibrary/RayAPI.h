@@ -167,6 +167,13 @@ struct FilePathList_ {
   char **paths;
 };
 
+struct RayCollision_ {
+  bool hit;
+  f32 distance;
+  v3 point;
+  v3 normal;
+};
+
 enum Keyboard_keys {
     K_NULL            = 0,
     K_APOSTROPHE      = 39,
@@ -425,6 +432,9 @@ typedef bool (*tIsCursorOnScreen)(void);
 
 typedef f32 (*tGetFrameTime)(void);
 
+typedef Ray_ (*tScreenToWorldRay)(v2 position, Camera3D_ camera);
+typedef RayCollision_ (*tGetRayCollisionBox)(Ray_ ray, BoundingBox_ box);
+
 // platform specific functions.
 typedef void (*tUsersafeDeleteFile)(const char *path); // Has to be double null terminatad
 typedef void *(*tLoadFunctionFromDLL)(void *dll_handle, const char *function_name);
@@ -600,6 +610,10 @@ struct RayAPI {
   tIsCursorOnScreen IsCursorOnScreen;
   
   tGetFrameTime GetFrameTime;
+
+  tGetRayCollisionBox GetRayCollisionBox;
+  tScreenToWorldRay ScreenToWorldRay;
+
 };
 
 #endif 

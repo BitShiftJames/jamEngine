@@ -20,6 +20,10 @@ struct scene_data {
   u32 count;
   u32 capacity;
   construction_block *construction_blocks;
+
+  bool DrawRay;
+  Ray_ RayToDraw;
+  Ray_ RayToFollow;
 };
 
 v4 ZeroQuaternion() {
@@ -224,6 +228,19 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
 
   UpdateCamera(&data->camera, data->look_rotation, acceleration, engineCTX->GetFrameTime());
 
+  if (engineCTX->IsKeyPressed(K_T)) {
+    data->RayToDraw = engineCTX->ScreenToWorldRay(engineCTX->HalfScreenSize, data->camera);
+  }
+
+  if (engineCTX->IsKeyDown(K_T)) {
+    data->DrawRay = true;
+    data->RayToFollow = engineCTX->ScreenToWorldRay(engineCTX->HalfScreenSize, data->camera);
+  } else {
+    data->DrawRay = false;
+  }
+
+
+
 }
 
 SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
@@ -245,6 +262,14 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
       } else {
         engineCTX->DrawCube(currConstructionBlock.min, currConstructionBlock.max, WHITE);
       }
+    }
+
+    if (data->DrawRay) {
+      engineCTX->DrawRay(data->RayToDraw, Color_{255, 0, 0, 255});
+      engineCTX->DrawRay(data->RayToFollow, Color_{0, 0, 255, 255});
+      engineCTX->DrawText(data->defaultFont, 
+                      engineCTX->TextFormat("Trying to draw Ray"), 
+                      v2{120, 20}, 20, 2, Color_{255,255,255,255});
     }
 
   engineCTX->EndMode3D();

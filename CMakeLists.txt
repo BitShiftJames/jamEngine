@@ -17,6 +17,12 @@ endif()
 if (UNIX)
   message("Building for linux")
   add_executable(${PROJECT_NAME} src/main.cpp src/jamPlatform/platform_linux.cpp)
+  if (DEFINED ENV{WAYLAND_DISPLAY})
+    message("Wayland detected")
+
+    add_definitions(-DPLATFORM_WAYLAND=ON)
+
+  endif()
 endif()
 
 add_library(jamLibrary STATIC ${jamLib_sources})
