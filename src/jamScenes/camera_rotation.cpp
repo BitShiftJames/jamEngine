@@ -5,10 +5,10 @@
 
 #include <cmath>
 #include <cstring>
+
 struct construction_block {
   v3 min;
   v3 max;
-  bool selected;
 };
 
 struct scene_data {
@@ -20,8 +20,10 @@ struct scene_data {
   u32 count;
   u32 capacity;
   construction_block *construction_blocks;
+  construction_block *selected_block;
 
   bool RayHit;
+  bool ObjectLock;
   Ray_ RayToFollow;
 };
 
@@ -200,11 +202,13 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
   v2 mouseDelta = engineCTX->GetMouseDelta();
-  data->look_rotation.x -= mouseDelta.x * data->sensitivity.x;
-  data->look_rotation.y += mouseDelta.y * data->sensitivity.y;
+  if (!data->ObjectLock) {
+    data->look_rotation.x -= mouseDelta.x * data->sensitivity.x;
+    data->look_rotation.y += mouseDelta.y * data->sensitivity.y;
 
-  data->look_rotation.x = fmodf(data->look_rotation.x, Tau);
-  data->look_rotation.y = fmodf(data->look_rotation.y, Tau);
+    data->look_rotation.x = fmodf(data->look_rotation.x, Tau);
+    data->look_rotation.y = fmodf(data->look_rotation.y, Tau);
+  }
 
   v3 acceleration = {};
   if (engineCTX->IsKeyDown(K_W)) {
@@ -229,7 +233,7 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   if (engineCTX->IsKeyPressed(K_PERIOD)) {
     data->construction_blocks[data->count].min = {2.0f, 2.0f, 2.0f};
     data->construction_blocks[data->count].max = {4.0f, 4.0f, 4.0f};
-    data->construction_blocks[data->count].selected = true;
+    data->selected_block = &data->construction_blocks[data->count];
     data->count++;
   }
 
@@ -238,12 +242,29 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   UpdateCamera(&data->camera, data->look_rotation, acceleration, engineCTX->GetFrameTime());
 
   data->RayToFollow = engineCTX->ScreenToWorldRay(engineCTX->HalfScreenSize, data->camera);
-  for (u32 Index = 0; Index < data->count; Index++) {
-    construction_block currConstructionBlock = data->construction_blocks[Index];
-    if (currConstructionBlock.selected) {
-        data->RayHit = GetRayHit(data->RayToFollow, currConstructionBlock.min, v3{1.0f, 1.0f, 1.0f}, engineCTX);
+  if (data->selected_block) {
+    data->RayHit = GetRayHit(data->RayToFollow, data->selected_block->min, v3{1.0f, 1.0f, 1.0f}, engineCTX);
+  }
+
+  if (data->RayHit && engineCTX->IsMouseButtonPressed(M1)) {
+    data->ObjectLock = true;
+  } else if (engineCTX->IsMouseButtonReleased(M1)) {
+    data->ObjectLock = false;
+  }
+
+  if (data->ObjectLock) {
+    v3 To = normalize(data->camera.target - data->camera.position);
+    v3 right = {0.0f, 0.0f, 1.0f};
+    f32 facing_dot = dot_v3(To, right);
+    f32 facing_threshold = 0.45; // Distance from zero to start translating along Z axis rather than X axis
+    if (fabsf(facing_dot) < facing_threshold) {
+      data->selected_block->min.z += mouseDelta.x * data->sensitivity.x;
+    } else {
+      data->selected_block->min.x += mouseDelta.x * data->sensitivity.x;
     }
 
+    // translate along Y axis
+    data->selected_block->min.y -= mouseDelta.y * data->sensitivity.y;
   }
 }
 
@@ -254,21 +275,24 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
   engineCTX->BeginMode3D(data->camera);
 
     for (u32 Index = 0; Index < data->count; Index++) {
-      construction_block currConstructionBlock = data->construction_blocks[Index];
+      construction_block *currConstructionBlock = &data->construction_blocks[Index];
       
-      if (currConstructionBlock.selected) {
+      if (currConstructionBlock == data->selected_block) {
         Color_ selected_box_color = WHITE;
         if (data->RayHit) {
           selected_box_color = Color_{255, 0, 0, 255};
         }
-        engineCTX->DrawWireframeCube(currConstructionBlock.min, currConstructionBlock.max, selected_box_color);
-        v3 SpherePosition = v3{(currConstructionBlock.min.x),
-                               (currConstructionBlock.min.y),
-                               (currConstructionBlock.min.z)};
+        if (data->ObjectLock) {
+          selected_box_color = Color_{0, 0, 255, 255};
+        }
+        engineCTX->DrawWireframeCube(currConstructionBlock->min, currConstructionBlock->max, selected_box_color);
+        v3 SpherePosition = v3{(currConstructionBlock->min.x),
+                               (currConstructionBlock->min.y),
+                               (currConstructionBlock->min.z)};
         engineCTX->DrawWireframeCube(SpherePosition, v3{1.0f, 1.0f, 1.0f}, WHITE);
         engineCTX->DrawSphere(SpherePosition, 0.1f, 12, 12, WHITE);
       } else {
-        engineCTX->DrawCube(currConstructionBlock.min, currConstructionBlock.max, WHITE);
+        engineCTX->DrawCube(currConstructionBlock->min, currConstructionBlock->max, WHITE);
       }
     }
 
@@ -298,6 +322,7 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   data->sensitivity.x = 0.001f;
   data->sensitivity.y = 0.001f;
   data->sensitivity.z = 0.2f;
+
 
   engineCTX->DisableCursor();
 
