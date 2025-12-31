@@ -39,7 +39,20 @@ v4 ZeroQuaternion() {
 #define Tau 6.28318
 #define WHITE {255, 255, 255, 255}
 #define BLACK {0, 0, 0, 255}
-#define ZeroVector {0, 0, 0}
+
+#define RED {255, 0, 0, 255}
+#define GREEN {0, 255, 0, 255}
+#define BLUE {0, 0, 255, 255}
+
+#define ZeroVector {0.0f, 0.0f, 0.0f}
+#define POS_X {1.0f, 0.0f, 0.0f}
+#define NEG_X {-1.0f, 0.0f, 0.0f}
+
+#define POS_Y {0.0f, 1.0f, 0.0f}
+#define NEG_Y {0.0f, -1.0f, 0.0f}
+
+#define POS_Z {0.0f, 0.0f, 1.0f}
+#define NEG_Z {0.0f, 0.0f, -1.0f}
 
 v4 AngleAxisQuaternion(f32 AngleDegrees, v3 Axis) {
   v4 result = {};
@@ -167,8 +180,8 @@ v3 normalize(v3 p1) {
 }
 
 void UpdateCamera(Camera3D_ *camera, v3 look_rotation, v3 movement_delta, f32 deltaTime) {
-  v3 up = {0.0f, 1.0f, 0.0f};
-  v3 targetOffset = v3{0.0f, 0.0f, -1.0f};
+  v3 up = POS_Y;
+  v3 targetOffset = NEG_Z;
 
   v3 yaw = vector3RotateByAxisAngle(targetOffset, up, look_rotation.x);
 
@@ -279,18 +292,24 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
 
   if (engineCTX->IsMouseButtonReleased(M1)) {
     data->MoveObject = false;
+    data->x_lock = false;
+    data->y_lock = false;
+    data->z_lock = false;
   }
 
   if (engineCTX->IsMouseButtonReleased(M2)) {
     data->ScaleObject = false;
+    data->x_lock = false;
+    data->y_lock = false;
+    data->z_lock = false;
   }
 
   if (data->MoveObject || data->ScaleObject) {
     v3 To = normalize(data->camera.target - data->camera.position);
     v3 right = cross(To, data->camera.up);
     
-    v3 object_z_axis = {0.0f, 0.0f, 1.0f};
-    v3 object_x_axis = {1.0f, 0.0f, 0.0f};
+    v3 object_z_axis = POS_Z;
+    v3 object_x_axis = POS_X;
     
     f32 z_scale = dot_v3(right, object_z_axis);
     f32 x_scale = dot_v3(right, object_x_axis);
@@ -334,20 +353,35 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
 
   engineCTX->ClearBackground(Color_{0, 0, 0, 255});
   engineCTX->BeginMode3D(data->camera);
+    if ((data->MoveObject || data->ScaleObject) && data->selected_block) {
+      if (data->x_lock) {
+        engineCTX->DrawRay(Ray_{data->selected_block->min, POS_X}, RED);
+        engineCTX->DrawRay(Ray_{data->selected_block->min, NEG_X}, RED);
+      }
 
+      if (data->y_lock) {
+        engineCTX->DrawRay(Ray_{data->selected_block->min, POS_Y}, GREEN);
+        engineCTX->DrawRay(Ray_{data->selected_block->min, NEG_Y}, GREEN);
+      }
+
+      if (data->z_lock) {
+        engineCTX->DrawRay(Ray_{data->selected_block->min, POS_Z}, BLUE);
+        engineCTX->DrawRay(Ray_{data->selected_block->min, NEG_Z}, BLUE);
+      }
+    }
     for (u32 Index = 0; Index < data->count; Index++) {
       construction_block *currConstructionBlock = &data->construction_blocks[Index];
       
       if (currConstructionBlock == data->selected_block) {
         Color_ selected_box_color = WHITE;
         if (data->RayHit) {
-          selected_box_color = Color_{255, 0, 0, 255};
+          selected_box_color = RED;
         }
         if (data->MoveObject) {
-          selected_box_color = Color_{0, 0, 255, 255};
+          selected_box_color = GREEN;
         }
         if (data->ScaleObject) {
-          selected_box_color = Color_{0, 255, 0, 255};
+          selected_box_color = BLUE;
         }
         engineCTX->DrawWireframeCube(currConstructionBlock->min, currConstructionBlock->max, selected_box_color);
         v3 SpherePosition = v3{(currConstructionBlock->min.x),
@@ -361,13 +395,14 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
     }
 
   engineCTX->EndMode3D();
+  if (data->selected_block) {
+    engineCTX->DrawText(data->defaultFont, 
+                        engineCTX->TextFormat("Box Position: (%f, %f)", data->selected_block->min.x, data->selected_block->min.y), 
+                        v2{120, 20}, 20, 2, WHITE);
+  }
 
-  engineCTX->DrawText(data->defaultFont, 
-                      engineCTX->TextFormat(""), 
-                      v2{120, 20}, 20, 2, Color_{255,255,255,255});
-
-  engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{5, 10}, Color_{255, 255, 255, 255});
-  engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{10, 5}, Color_{255, 255, 255, 255});
+  engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{5, 10}, WHITE);
+  engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{10, 5}, WHITE);
 }
 
 SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
@@ -377,7 +412,7 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
 
   data->camera.position = v3{-10.0f, 0.0f, 0.0f};
   data->camera.target = {0.0f, 0.0f, 0.0f};
-  data->camera.up = {0.0f, 1.0f, 0.0f};
+  data->camera.up = POS_Y;
   data->camera.fovy = 90.0f;
   data->camera.projection = 0;
 
