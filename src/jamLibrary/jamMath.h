@@ -56,16 +56,22 @@ static inline u16 packR4G4B4A4(u16 r, u16 g, u16 b, u16 a) {
 
 #define JAMRAND_MAX 0xFFFFFFFF
 
-#define Rand() ((u32)GetRandomValue(0, JAMRAND_MAX))
 
 // when a world is saved we can get a file Mod time 
 // GetFileModTime(const char *fileName);
 // and use that to set the initial value. For continued precieved randomness we could do something.
 // like periodic take the file mod time and re seed the random function in raylib.
 //SetRandomSeed(unsigned int seed);
+//#define Rand() ((u32)GetRandomValue(0, JAMRAND_MAX))
 
 inline f32 floor_f32(f32 value) {
   f32 result = floorf(value);
+
+  return result;
+}
+
+inline f32 sign_f32(f32 value) {
+  f32 result = value / fabsf(value);
 
   return result;
 }

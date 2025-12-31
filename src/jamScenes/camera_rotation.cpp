@@ -23,7 +23,11 @@ struct scene_data {
   construction_block *selected_block;
 
   bool RayHit;
-  bool ObjectLock;
+  bool MoveObject;
+  bool ScaleObject;
+  bool x_lock;
+  bool y_lock;
+  bool z_lock;
   Ray_ RayToFollow;
 };
 
@@ -202,7 +206,7 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
   v2 mouseDelta = engineCTX->GetMouseDelta();
-  if (!data->ObjectLock) {
+  if (!(data->ScaleObject || data->MoveObject)) {
     data->look_rotation.x -= mouseDelta.x * data->sensitivity.x;
     data->look_rotation.y += mouseDelta.y * data->sensitivity.y;
 
@@ -246,25 +250,82 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
     data->RayHit = GetRayHit(data->RayToFollow, data->selected_block->min, v3{1.0f, 1.0f, 1.0f}, engineCTX);
   }
 
-  if (data->RayHit && engineCTX->IsMouseButtonPressed(M1)) {
-    data->ObjectLock = true;
-  } else if (engineCTX->IsMouseButtonReleased(M1)) {
-    data->ObjectLock = false;
+  if (data->RayHit) {
+    if (engineCTX->IsMouseButtonPressed(M1)) {
+      data->MoveObject = true;
+    }
+    if (engineCTX->IsMouseButtonPressed(M2)) {
+      data->ScaleObject = true;
+    }
   }
 
-  if (data->ObjectLock) {
+  if (engineCTX->IsKeyPressed(K_X)) {
+    data->x_lock = !data->x_lock;
+    data->y_lock = false;
+    data->z_lock = false;
+  }
+
+  if (engineCTX->IsKeyPressed(K_Y)) {
+    data->x_lock = false;
+    data->y_lock = !data->y_lock;
+    data->z_lock = false;
+  }
+
+  if (engineCTX->IsKeyPressed(K_Z)) {
+    data->x_lock = false;
+    data->y_lock = false;
+    data->z_lock = !data->z_lock;
+  }
+
+  if (engineCTX->IsMouseButtonReleased(M1)) {
+    data->MoveObject = false;
+  }
+
+  if (engineCTX->IsMouseButtonReleased(M2)) {
+    data->ScaleObject = false;
+  }
+
+  if (data->MoveObject || data->ScaleObject) {
     v3 To = normalize(data->camera.target - data->camera.position);
-    v3 right = {0.0f, 0.0f, 1.0f};
-    f32 facing_dot = dot_v3(To, right);
-    f32 facing_threshold = 0.45; // Distance from zero to start translating along Z axis rather than X axis
-    if (fabsf(facing_dot) < facing_threshold) {
-      data->selected_block->min.z += mouseDelta.x * data->sensitivity.x;
-    } else {
-      data->selected_block->min.x += mouseDelta.x * data->sensitivity.x;
+    v3 right = cross(To, data->camera.up);
+    
+    v3 object_z_axis = {0.0f, 0.0f, 1.0f};
+    v3 object_x_axis = {1.0f, 0.0f, 0.0f};
+    
+    f32 z_scale = dot_v3(right, object_z_axis);
+    f32 x_scale = dot_v3(right, object_x_axis);
+    f32 y_scale = 1.0f; 
+
+    if (data->x_lock) {
+      x_scale = sign_f32(x_scale);
+      z_scale = 0;
+      y_scale = 0;
     }
 
-    // translate along Y axis
-    data->selected_block->min.y -= mouseDelta.y * data->sensitivity.y;
+    if (data->y_lock) {
+      z_scale = 0;
+      x_scale = 0;
+    }
+
+    if (data->z_lock) {
+      z_scale = sign_f32(z_scale);
+      y_scale = 0;
+      x_scale = 0;
+    }
+
+    if (data->MoveObject) {
+      // move along axis scaled to the camera's right axis.
+      data->selected_block->min.x += ((x_scale) * (mouseDelta.x * data->sensitivity.x));
+      data->selected_block->min.y -= ((y_scale) * (mouseDelta.y * data->sensitivity.y));
+      data->selected_block->min.z += ((z_scale) * (mouseDelta.x * data->sensitivity.x));
+    }
+    if (data->ScaleObject) {
+
+      // scale along axis scaled to the camera's right axis.
+      data->selected_block->max.x += ((x_scale) * (mouseDelta.x * data->sensitivity.x));
+      data->selected_block->max.y -= ((y_scale) * (mouseDelta.y * data->sensitivity.y));
+      data->selected_block->max.z += ((z_scale) * (mouseDelta.x * data->sensitivity.x));
+    }
   }
 }
 
@@ -282,8 +343,11 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
         if (data->RayHit) {
           selected_box_color = Color_{255, 0, 0, 255};
         }
-        if (data->ObjectLock) {
+        if (data->MoveObject) {
           selected_box_color = Color_{0, 0, 255, 255};
+        }
+        if (data->ScaleObject) {
+          selected_box_color = Color_{0, 255, 0, 255};
         }
         engineCTX->DrawWireframeCube(currConstructionBlock->min, currConstructionBlock->max, selected_box_color);
         v3 SpherePosition = v3{(currConstructionBlock->min.x),
