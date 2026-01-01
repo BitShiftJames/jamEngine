@@ -311,6 +311,18 @@ int main() {
   engineCTX.GetRayCollisionBox = (tGetRayCollisionBox)GetRayCollisionBox;
   engineCTX.ScreenToWorldRay = (tScreenToWorldRay)GetScreenToWorldRay;
 
+  engineCTX.LoadShader = (tLoadShader)LoadShader;
+  engineCTX.LoadShaderFromMemory = (tLoadShaderFromMemory)LoadShaderFromMemory;
+  engineCTX.IsShaderValid = (tIsShaderValid)IsShaderValid;
+  engineCTX.GetShaderLocation = (tGetShaderLocation)GetShaderLocation;
+  engineCTX.GetShaderLocationAttrib = (tGetShaderLocationAttrib)GetShaderLocationAttrib;
+  engineCTX.SetShaderValue = (tSetShaderValue)SetShaderValue;
+  engineCTX.SetShaderValueMatrix = (tSetShaderValueMatrix)SetShaderValueMatrix;
+  engineCTX.SetShaderValueTexture = (tSetShaderValueTexture)SetShaderValueTexture;
+  engineCTX.UnloadShader = (tUnloadShader)UnloadShader;
+  engineCTX.BeginShaderMode = (tBeginShaderMode)BeginShaderMode;
+  engineCTX.EndShaderMode = (tEndShaderMode)EndShaderMode;
+
   // TODO[Refactor]: Have scenes suballocate out of a bigger memory block
   memoryArena scene_memory = {};
   scene_memory.Size = Megabytes(200);

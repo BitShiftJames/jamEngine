@@ -29,6 +29,8 @@ struct scene_data {
   bool y_lock;
   bool z_lock;
   Ray_ RayToFollow;
+
+  Shader_ exampleShader;
 };
 
 v4 ZeroQuaternion() {
@@ -348,10 +350,23 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   }
 }
 
+v3 surface_normal(v3 p1, v3 p2, v3 p3) {
+  v3 result = {};
+
+  v3 u = p2 - p1;
+  v3 v = p3 - p1;
+
+  result = cross(u, v);
+
+  return result;
+}
+
 SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
   engineCTX->ClearBackground(Color_{0, 0, 0, 255});
+
+  engineCTX->BeginShaderMode(data->exampleShader);
   engineCTX->BeginMode3D(data->camera);
     if ((data->MoveObject || data->ScaleObject) && data->selected_block) {
       if (data->x_lock) {
@@ -383,10 +398,12 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
         if (data->ScaleObject) {
           selected_box_color = BLUE;
         }
+
         engineCTX->DrawWireframeCube(currConstructionBlock->min, currConstructionBlock->max, selected_box_color);
         v3 SpherePosition = v3{(currConstructionBlock->min.x),
                                (currConstructionBlock->min.y),
                                (currConstructionBlock->min.z)};
+        
         engineCTX->DrawWireframeCube(SpherePosition, v3{1.0f, 1.0f, 1.0f}, WHITE);
         engineCTX->DrawSphere(SpherePosition, 0.1f, 12, 12, WHITE);
       } else {
@@ -395,6 +412,8 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
     }
 
   engineCTX->EndMode3D();
+  engineCTX->EndShaderMode();
+
   if (data->selected_block) {
     engineCTX->DrawText(data->defaultFont, 
                         engineCTX->TextFormat("Box Position: (%f, %f)", data->selected_block->min.x, data->selected_block->min.y), 
@@ -404,6 +423,7 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{5, 10}, WHITE);
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{10, 5}, WHITE);
 }
+
 
 SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   self->data = PushStruct(self->arena, scene_data);
@@ -427,6 +447,8 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
 
   data->capacity = 100;
   data->construction_blocks = PushArray(self->arena, data->capacity, construction_block);
+
+  data->exampleShader = engineCTX->LoadShader("../shaders/default.vert", "../shaders/default.frag");
 
 }
 

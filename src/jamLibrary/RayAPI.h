@@ -448,6 +448,18 @@ typedef bool (*tIsValidLibraryExtension)(const char *path, RayAPI *engineCTX);
 typedef void (*tAppendLibraryExtension)(char *buf, int *text_length, RayAPI *engineCTX);
 typedef void (*tAppendPathSeperator)(char *buf, int *text_length, RayAPI *engineCTX);
 
+typedef Shader_ (*tLoadShader)(const char *vsFileName, const char *fsFileName);
+typedef Shader_ (*tLoadShaderFromMemory)(const char *vsCode, const char *fsCode);
+typedef bool (*tIsShaderValid)(Shader_ shader);
+typedef int (*tGetShaderLocation)(Shader_ shader, const char *uniformName);   
+typedef int (*tGetShaderLocationAttrib)(Shader_ shader, const char *attribName);
+typedef void (*tSetShaderValue)(Shader_ shader, int locIndex, const void *value, int uniformType);
+typedef void (*tSetShaderValueMatrix)(Shader_ shader, int locIndex, Matrix_ mat);
+typedef void (*tSetShaderValueTexture)(Shader_ shader, int locIndex, Texture2D_ texture);
+typedef void (*tUnloadShader)(Shader_ shader);
+typedef void (*tBeginShaderMode)(Shader_ shader);
+typedef void (*tEndShaderMode)(void);
+
 struct Style {
   Font_ font;
   f32 spacing;
@@ -613,6 +625,18 @@ struct RayAPI {
 
   tGetRayCollisionBox GetRayCollisionBox;
   tScreenToWorldRay ScreenToWorldRay;
+  
+  tLoadShader LoadShader;
+  tLoadShaderFromMemory LoadShaderFromMemory;
+  tIsShaderValid IsShaderValid;
+  tGetShaderLocation GetShaderLocation;
+  tGetShaderLocationAttrib GetShaderLocationAttrib;
+  tSetShaderValue SetShaderValue;
+  tSetShaderValueMatrix SetShaderValueMatrix;
+  tSetShaderValueTexture SetShaderValueTexture;
+  tUnloadShader UnloadShader;
+  tBeginShaderMode BeginShaderMode;
+  tEndShaderMode EndShaderMode;
 
 };
 
