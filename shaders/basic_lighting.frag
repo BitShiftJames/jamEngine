@@ -21,6 +21,7 @@ void main() {
   vec4 texColor = texture(texture0, fragTexCoord);
   vec3 normal = normalize(fragNormal);
   vec3 viewD = normalize(cameraPosition - fragPosition);
+  vec3 specular = vec3(0.0);
 
   vec4 tint = fragColor * colDiffuse;
 
@@ -29,7 +30,7 @@ void main() {
   float NdotL = max(dot(normal, light), 0.0);
   vec3 lightDot = lightColor.rgb * NdotL;
 
-  vec3 specular = step(0.0, NdotL) * pow(max(0.0, dot(viewD, reflect(-(light), normal))), 16.0);
+  specular += (step(0.0, NdotL) * pow(max(0.0, dot(viewD, reflect(-(light), normal))), 16.0));
   
   finalColor = (texColor*((tint + vec4(specular, 1.0))*vec4(lightDot, 1.0)));
   finalColor += texColor*(ambient/10.0)*tint;

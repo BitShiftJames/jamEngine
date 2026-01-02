@@ -460,6 +460,22 @@ typedef void (*tUnloadShader)(Shader_ shader);
 typedef void (*tBeginShaderMode)(Shader_ shader);
 typedef void (*tEndShaderMode)(void);
 
+enum SHADER_VARIABLE_TYPES {
+    SHADER_U_FLOAT = 0,       // Shader uniform type: float
+    SHADER_U_VEC2,            // Shader uniform type: vec2 (2 float)
+    SHADER_U_VEC3,            // Shader uniform type: vec3 (3 float)
+    SHADER_U_VEC4,            // Shader uniform type: vec4 (4 float)
+    SHADER_U_INT,             // Shader uniform type: int
+    SHADER_U_IVEC2,           // Shader uniform type: ivec2 (2 int)
+    SHADER_U_IVEC3,           // Shader uniform type: ivec3 (3 int)
+    SHADER_U_IVEC4,           // Shader uniform type: ivec4 (4 int)
+    SHADER_U_UINT,            // Shader uniform type: unsigned int
+    SHADER_U_UIVEC2,          // Shader uniform type: uivec2 (2 unsigned int)
+    SHADER_U_UIVEC3,          // Shader uniform type: uivec3 (3 unsigned int)
+    SHADER_U_UIVEC4,          // Shader uniform type: uivec4 (4 unsigned int)
+    SHADER_U_SAMPLER2D        // Shader uniform type: sampler2d
+};
+
 struct Style {
   Font_ font;
   f32 spacing;

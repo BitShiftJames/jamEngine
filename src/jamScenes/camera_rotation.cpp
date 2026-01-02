@@ -31,6 +31,8 @@ struct scene_data {
   Ray_ RayToFollow;
 
   Shader_ exampleShader;
+  s32 uniform_location_cameraPosition;
+  s32 uniform_location_cameraTarget;
 };
 
 v4 ZeroQuaternion() {
@@ -181,6 +183,15 @@ v3 normalize(v3 p1) {
   return result;
 }
 
+void UpdateShaderCamera(RayAPI *engineCTX, Shader_ shader, v3 pos, v3 target, s32 pos_loc, s32 target_loc) {
+  
+  f32 position[3] = {pos.x, pos.y, pos.z};
+  f32 targetion[3] = {target.x, target.y, target.z};
+  engineCTX->SetShaderValue(shader, pos_loc, position, SHADER_U_VEC3);
+  engineCTX->SetShaderValue(shader, target_loc, targetion, SHADER_U_VEC3);
+
+}
+
 void UpdateCamera(Camera3D_ *camera, v3 look_rotation, v3 movement_delta, f32 deltaTime) {
   v3 up = POS_Y;
   v3 targetOffset = NEG_Z;
@@ -204,7 +215,7 @@ void UpdateCamera(Camera3D_ *camera, v3 look_rotation, v3 movement_delta, f32 de
   v3 movement_vector = vector3RotateByAxisAngle(movement_delta, up, look_rotation.x);
   camera->position += movement_vector * deltaTime;
   camera->target = camera->position + pitch;
-
+  
 }
 
 inline bool GetRayHit(Ray_ Ray, v3 center, v3 dim, RayAPI *engineCTX) {
@@ -259,6 +270,7 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   acceleration *= 20;
 
   UpdateCamera(&data->camera, data->look_rotation, acceleration, engineCTX->GetFrameTime());
+  UpdateShaderCamera(engineCTX, data->exampleShader, data->camera.position, data->camera.target, data->uniform_location_cameraPosition, data->uniform_location_cameraTarget);
 
   data->RayToFollow = engineCTX->ScreenToWorldRay(engineCTX->HalfScreenSize, data->camera);
   if (data->selected_block) {
@@ -366,8 +378,9 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
 
   engineCTX->ClearBackground(Color_{0, 0, 0, 255});
 
-  engineCTX->BeginShaderMode(data->exampleShader);
   engineCTX->BeginMode3D(data->camera);
+
+  engineCTX->BeginShaderMode(data->exampleShader);
     if ((data->MoveObject || data->ScaleObject) && data->selected_block) {
       if (data->x_lock) {
         engineCTX->DrawRay(Ray_{data->selected_block->min, POS_X}, RED);
@@ -388,37 +401,45 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
       construction_block *currConstructionBlock = &data->construction_blocks[Index];
       
       if (currConstructionBlock == data->selected_block) {
-        Color_ selected_box_color = WHITE;
-        if (data->RayHit) {
-          selected_box_color = RED;
-        }
-        if (data->MoveObject) {
-          selected_box_color = GREEN;
-        }
-        if (data->ScaleObject) {
-          selected_box_color = BLUE;
-        }
-
-        engineCTX->DrawWireframeCube(currConstructionBlock->min, currConstructionBlock->max, selected_box_color);
-        v3 SpherePosition = v3{(currConstructionBlock->min.x),
-                               (currConstructionBlock->min.y),
-                               (currConstructionBlock->min.z)};
-        
-        engineCTX->DrawWireframeCube(SpherePosition, v3{1.0f, 1.0f, 1.0f}, WHITE);
-        engineCTX->DrawSphere(SpherePosition, 0.1f, 12, 12, WHITE);
+        continue;
       } else {
         engineCTX->DrawCube(currConstructionBlock->min, currConstructionBlock->max, WHITE);
       }
     }
 
-  engineCTX->EndMode3D();
   engineCTX->EndShaderMode();
 
-  if (data->selected_block) {
-    engineCTX->DrawText(data->defaultFont, 
-                        engineCTX->TextFormat("Box Position: (%f, %f)", data->selected_block->min.x, data->selected_block->min.y), 
-                        v2{120, 20}, 20, 2, WHITE);
-  }
+    if (data->selected_block) {
+      Color_ selected_box_color = WHITE;
+      if (data->RayHit) {
+        selected_box_color = RED;
+      }
+      if (data->MoveObject) {
+        selected_box_color = GREEN;
+      }
+      if (data->ScaleObject) {
+        selected_box_color = BLUE;
+      }
+
+      engineCTX->DrawWireframeCube(data->selected_block->min, data->selected_block->max, selected_box_color);
+      v3 SpherePosition = v3{(data->selected_block->min.x),
+                             (data->selected_block->min.y),
+                             (data->selected_block->min.z)};
+      
+      engineCTX->DrawWireframeCube(SpherePosition, v3{1.0f, 1.0f, 1.0f}, WHITE);
+      engineCTX->DrawSphere(SpherePosition, 0.1f, 12, 12, WHITE);
+    }
+
+  engineCTX->EndMode3D();
+
+  engineCTX->DrawText(data->defaultFont, 
+                      engineCTX->TextFormat("Camera target: (%f, %f, %f)\nCamera Position: (%f, %f, %f)\nCamera target -> position(%f, %f, %f)", 
+                                            data->camera.target.x, data->camera.target.y, data->camera.target.z,
+                                            data->camera.position.x, data->camera.position.y, data->camera.position.z,
+                                            data->camera.target.x - data->camera.position.x,
+                                            data->camera.target.y - data->camera.position.y,
+                                            data->camera.target.z - data->camera.position.z), 
+                      v2{120, 20}, 20, 2, WHITE);
 
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{5, 10}, WHITE);
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{10, 5}, WHITE);
@@ -430,7 +451,7 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
 
   scene_data *data = (scene_data *)self->data;
 
-  data->camera.position = v3{-10.0f, 0.0f, 0.0f};
+  data->camera.position = v3{0.0f, 0.0f, 0.0f};
   data->camera.target = {0.0f, 0.0f, 0.0f};
   data->camera.up = POS_Y;
   data->camera.fovy = 90.0f;
@@ -448,7 +469,17 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   data->capacity = 100;
   data->construction_blocks = PushArray(self->arena, data->capacity, construction_block);
 
-  data->exampleShader = engineCTX->LoadShader("../shaders/default.vert", "../shaders/default.frag");
+  data->exampleShader = engineCTX->LoadShader("../shaders/basic_lighting.vert", "../shaders/basic_lighting.frag");
+  
+  s32 uniform_location_ambient = engineCTX->GetShaderLocation(data->exampleShader, "ambient");
+  s32 uniform_location_lightColor = engineCTX->GetShaderLocation(data->exampleShader, "lightColor");
+  f32 ambient_value[4] = {0.5f, 0.5f, 0.5f, 0.5f};
+  f32 light_color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+  engineCTX->SetShaderValue(data->exampleShader, uniform_location_ambient, ambient_value, SHADER_U_VEC4);
+  engineCTX->SetShaderValue(data->exampleShader, uniform_location_lightColor, light_color, SHADER_U_VEC4);
+
+  data->uniform_location_cameraPosition = engineCTX->GetShaderLocation(data->exampleShader, "cameraPosition");
+  data->uniform_location_cameraTarget = engineCTX->GetShaderLocation(data->exampleShader, "cameraTarget");
 
 }
 
