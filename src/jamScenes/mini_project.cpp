@@ -339,6 +339,7 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   engineCTX->SetMaterialTexture(&data->wall_material, 2, wall_normal);
   
   data->lightShader.locs[17] = engineCTX->GetShaderLocation(data->lightShader, "normalMap");
+  data->lightShader.locs[18] = engineCTX->GetShaderLocation(data->lightShader, "roughMap");
 
   data->wall_mesh = engineCTX->GenMeshPlane(20.0f, 20.0f, 2, 2);
   data->wall_matrix = Matrix_{0};

@@ -12,6 +12,7 @@ out vec4 finalColor;
 
 uniform sampler2D texture0;
 uniform sampler2D normalMap;
+uniform sampler2D roughMap;
 uniform vec4 colDiffuse;
 
 uniform vec4 ambient;
@@ -20,28 +21,38 @@ uniform vec3 cameraTarget;
 uniform vec4 lightColor;
 
 void main() {
+  // tex color
   vec4 texColor = texture(texture0, fragTexCoord);
-  vec3 viewD = normalize(cameraPosition - fragPosition);
-  vec3 specular = vec3(0.0);
-
-  //vec3 normal = normalize(fragNormal);
-  vec3 normal = texture(normalMap, vec2(fragTexCoord.x, fragTexCoord.y)).rgb;
-
-  //Transform normal values to the range -1.0 ... 1.0
-  normal = normalize(normal*2.0 - 1.0);
-
-  //Transform the normal from tangent-space to world-space for lighting calculation
-  normal = normalize(normal*TBN);
-
   vec4 tint = fragColor * colDiffuse;
 
-  vec3 light = -normalize(cameraTarget - cameraPosition);
+  // 
+  vec3 spotDir = -normalize(cameraTarget - cameraPosition);
+  vec3 lightDir = normalize(cameraPosition - fragPosition);
+  vec3 halfwayDir = normalize(spotDir + lightDir);
 
-  float NdotL = max(dot(normal, light), 0.0);
+  //
+  float theta = dot(spotDir, lightDir);
+  float hardcutOff = 0.906;
+  float softcutOff = 0.819;
+
+  //
+  vec3 normal = texture(normalMap, vec2(fragTexCoord.x, fragTexCoord.y)).rgb;
+  float roughness = texture(roughMap, vec2(fragTexCoord.x, fragTexCoord.y)).r;
+  normal = normalize(normal*2.0 - 1.0);
+  normal = normalize(normal*TBN);
+
+  //
+  float NdotL = smoothstep(softcutOff, hardcutOff, theta) * max(dot(normal, lightDir), 0.0);
   vec3 lightDot = lightColor.rgb * NdotL;
 
-  specular += (step(0.0, NdotL) * pow(max(0.0, dot(viewD, reflect(-(light), normal))), 12.0));
-  
+  // Calculate specular
+  float shininess = mix(64.0, 0.0, roughness);
+  float specStrength = 1.0 - roughness;
+  float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
+
+  vec3 specular = lightColor.rgb * spec * specStrength;
+  ////////
+
   finalColor = (texColor*((tint + vec4(specular, 1.0))*vec4(lightDot, 1.0)));
   finalColor += texColor*(ambient/10.0)*tint;
 
