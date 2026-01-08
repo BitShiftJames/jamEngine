@@ -335,6 +335,10 @@ typedef long (*tGetFileModTime)(const char *fileName);
 typedef void (*tTextAppend)(char *text, const char *append, int *position);
 typedef const char *(*tTextFormat)(const char *text, ...);
 
+typedef Texture2D_ (*tLoadTexture)(const char *fileName);
+typedef bool (*tIsTextureValid)(Texture2D_ texture);
+typedef void (*tUnloadTexture)(Texture2D_ texture);
+
 typedef void *(*tMemAlloc)(u32 size);
 typedef void *(*tMemRealloc)(void *ptr, u32 size);
 typedef void (*tMemFree)(void *ptr);
@@ -399,7 +403,7 @@ typedef bool (*tExportMesh)(Mesh_ mesh, const char *fileName);
 typedef Material_ (*tLoadMaterials)(const char *fileName, s32 *materialcount);
 typedef Material_ (*tLoadMaterialsDefault)(void);
 typedef bool (*tUnloadMaterial)(Material_ material);
-typedef void (*tIsMaterialValid)(Material_ material);
+typedef bool (*tIsMaterialValid)(Material_ material);
 typedef void (*tSetMaterialTexture)(Material_ *material, s32 mapType, Texture2D_ texture);
 typedef void (*tSetModelMeshMaterial)(Model_ *model, s32 meshId, s32 materialId);
 
@@ -594,6 +598,7 @@ struct RayAPI {
   tGetMeshBoundingBox GetMeshBoundingBox;
   tGenMeshTangents GenMeshTangents;
   tExportMesh ExportMesh;
+  tUnloadMesh UnloadMesh;
 
   tLoadMaterials LoadMaterials;
   tLoadMaterialsDefault LoadMaterialsDefault;
@@ -653,7 +658,10 @@ struct RayAPI {
   tUnloadShader UnloadShader;
   tBeginShaderMode BeginShaderMode;
   tEndShaderMode EndShaderMode;
-
+  
+  tLoadTexture LoadTexture;
+  tIsTextureValid IsTextureValid;
+  tUnloadTexture UnloadTexture;
 };
 
 #endif 

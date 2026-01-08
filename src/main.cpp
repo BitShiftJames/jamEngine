@@ -322,6 +322,11 @@ int main() {
   engineCTX.UnloadShader = (tUnloadShader)UnloadShader;
   engineCTX.BeginShaderMode = (tBeginShaderMode)BeginShaderMode;
   engineCTX.EndShaderMode = (tEndShaderMode)EndShaderMode;
+  
+  engineCTX.LoadTexture = (tLoadTexture)LoadTexture;
+  engineCTX.IsTextureValid = (tIsTextureValid)IsTextureValid;
+  engineCTX.UnloadTexture = (tUnloadTexture)UnloadTexture;
+  engineCTX.UnloadMesh = (tUnloadMesh)UnloadMesh;
 
   // TODO[Refactor]: Have scenes suballocate out of a bigger memory block
   memoryArena scene_memory = {};
@@ -419,7 +424,7 @@ int main() {
   }
 
 
-  AddScene(&sceneTable, (char *)"camera_rotation", &active_scene_list_memory, &scene_memory, Megabytes(4), &engineCTX);
+  AddScene(&sceneTable, (char *)"mini_project", &active_scene_list_memory, &scene_memory, Megabytes(4), &engineCTX);
 
   engineCTX.ScreenSize = {(f32)engineCTX.GetScreenWidth(), (f32)engineCTX.GetScreenHeight()};
   engineCTX.HalfScreenSize = engineCTX.ScreenSize / 2;
