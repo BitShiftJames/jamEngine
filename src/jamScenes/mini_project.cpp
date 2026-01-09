@@ -301,6 +301,40 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
                            {data->drawnMap.z - 2.0f, data->drawnMap.z - 2.0f},
                            BLACK);
 
+  // FIXME: None of this is code that was well thought out kind of just brute forcing the translations at 06:04:42
+  
+  v2 worldMin = {fabsf(data->worldDimensions.min.x), fabsf(data->worldDimensions.min.z)};
+  v2 worldMax = {fabsf(data->worldDimensions.max.x) + worldMin.x, fabsf(data->worldDimensions.max.z) + worldMin.y};
+
+  // WorldMax TO 0
+  v2 worldRange = (worldMax - worldMin);
+
+  for (u32 Index = 0; Index < data->geometry_count; Index++) {
+
+    v2 geometry_min = { (data->world_geometry[Index].min.x + worldMin.x), 
+                        (data->world_geometry[Index].min.z + worldMin.y)};
+
+    v2 geometry_max = { (data->world_geometry[Index].max.x) + geometry_min.x, 
+                        (data->world_geometry[Index].max.z) + geometry_min.y};
+
+    v2 normalized_min = geometry_min / worldRange;
+    v2 normalized_max = geometry_max / worldRange;
+
+    v2 map_min = (normalized_min * data->drawnMap.z);
+
+    map_min.x += data->drawnMap.x;
+    map_min.y += data->drawnMap.y;
+
+    v2 map_max = (normalized_max * data->drawnMap.z);
+
+    map_max.x += data->drawnMap.x;
+    map_max.y += data->drawnMap.y;
+    
+    v2 map_dim = (map_max - map_min);
+
+    engineCTX->DrawRectangle(map_min, map_dim, WHITE);
+  }
+
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{5, 10}, WHITE);
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{10, 5}, WHITE);
 }
@@ -370,17 +404,19 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   data->wall_matrix.m13 = 0.0f;
   
   data->drawnMap = {15.0f, 15.0f, 215.0f};
+
+  data->geometry_count = 2;
+  data->world_geometry = PushArray(self->arena, data->geometry_count, Cubert);
+  
+  data->world_geometry[0].min = {-25.0f, 0.0f, -28.0f};
+  data->world_geometry[0].max = {20.0f, 10.0f, 20.0f};
+
+  data->world_geometry[1].min = {-40.0f, 0.0f, -40.0f};
+  data->world_geometry[1].max = {10.0f, 0.0f, 10.0f};
 }
 
 SceneAPI void scene_onExit(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
     
-  engineCTX->UnloadMesh(data->wall_mesh);
-  engineCTX->UnloadShader(data->lightShader);
-  engineCTX->UnloadMaterial(data->wall_material);
-  for (u32 Index = 0; Index < data->count; Index++) {
-    engineCTX->UnloadTexture(data->wall_textures[Index]);
-  }
-
   memset(self->arena->memory, 0, self->arena->Used);
 }

@@ -441,9 +441,11 @@ int main() {
     CheckForReload(scene_path, &sceneTable, &dll_memory, &engineCTX);
   
     if (engineCTX.IsWindowResized()) {
-      engineCTX.ScreenSize = {(f32)engineCTX.GetScreenHeight(), (f32)engineCTX.GetScreenHeight()};
+      engineCTX.ScreenSize = {(f32)engineCTX.GetScreenWidth(), (f32)engineCTX.GetScreenHeight()};
       engineCTX.HalfScreenSize = engineCTX.ScreenSize / 2;
       printf("Screen Size (%f, %f)\n", engineCTX.ScreenSize.x, engineCTX.ScreenSize.y);
+      printf("Half Screen Size (%f, %f)\n", engineCTX.HalfScreenSize.x, engineCTX.HalfScreenSize.y);
+
     }
 
     {
