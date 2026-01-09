@@ -359,7 +359,9 @@ int main() {
   engineCTX.InitWindow(0, 0, "Restarting from scratch");
   engineCTX.SetTraceLogLevel(LOG_ALL);
   engineCTX.SetTargetFPS(30);
-  
+
+  ToggleFullscreen(); 
+
   char *scene_path;
   char *src_path;
   char *scene_build_dir;
@@ -441,6 +443,7 @@ int main() {
     if (engineCTX.IsWindowResized()) {
       engineCTX.ScreenSize = {(f32)engineCTX.GetScreenHeight(), (f32)engineCTX.GetScreenHeight()};
       engineCTX.HalfScreenSize = engineCTX.ScreenSize / 2;
+      printf("Screen Size (%f, %f)\n", engineCTX.ScreenSize.x, engineCTX.ScreenSize.y);
     }
 
     {

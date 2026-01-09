@@ -20,7 +20,8 @@ if (UNIX)
   if (DEFINED ENV{WAYLAND_DISPLAY})
     message("Wayland detected")
 
-    add_definitions(-DPLATFORM_WAYLAND=ON)
+    set(GLFW_BUILD_WAYLAND ON)
+    set(GLFW_BUILD_X11 OFF)
 
   endif()
 endif()

@@ -41,7 +41,6 @@ foreach(src ${SCENE_FILES})
   get_filename_component(scene_name ${src} NAME_WE)
 
   add_library(${scene_name} MODULE ${src})
-  target_link_options(${scene_name} PRIVATE /NOIMPLIB /NOEXP)
   target_link_libraries(${scene_name} PRIVATE jamLibrary)
 
   set_target_properties(${scene_name} PROPERTIES
