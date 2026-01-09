@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstring>
 
-struct construction_block {
+struct Cubert {
   v3 min;
   v3 max;
 };
@@ -28,6 +28,13 @@ struct scene_data {
   Texture2D_ *wall_textures;
   Mesh_ wall_mesh;
   Matrix_ wall_matrix;
+  
+  Cubert worldDimensions;
+  u32 geometry_count;
+  Cubert *world_geometry;
+
+  // pos.x, pos.y, dimension.
+  v3 drawnMap;
 };
 
 v4 ZeroQuaternion() {
@@ -281,10 +288,18 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
     engineCTX->BeginShaderMode(data->lightShader);
       engineCTX->DrawCube(v3{0, 0, 0}, v3{4.0f, 4.0f, 4.0f}, WHITE);
     engineCTX->EndShaderMode();
-
+    
     engineCTX->DrawMesh(data->wall_mesh, data->wall_material, data->wall_matrix);
-
   engineCTX->EndMode3D();
+
+  // Map Drawing.
+  engineCTX->DrawRectangle({data->drawnMap.x, data->drawnMap.y}, 
+                           {data->drawnMap.z, data->drawnMap.z},
+                           WHITE);
+
+  engineCTX->DrawRectangle({data->drawnMap.x + 1.0f, data->drawnMap.y + 1.0f}, 
+                           {data->drawnMap.z - 2.0f, data->drawnMap.z - 2.0f},
+                           BLACK);
 
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{5, 10}, WHITE);
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{10, 5}, WHITE);
@@ -296,7 +311,7 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
 
   scene_data *data = (scene_data *)self->data;
 
-  data->camera.position = v3{0.0f, 0.0f, 0.0f};
+  data->camera.position = v3{0.0f, 10.0f, 0.0f};
   data->camera.target = {0.0f, 0.0f, 0.0f};
   data->camera.up = POS_Y;
   data->camera.fovy = 90.0f;
@@ -317,8 +332,11 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   s32 uniform_location_lightColor = engineCTX->GetShaderLocation(data->lightShader, "lightColor");
   f32 ambient_value[4] = {0.5f, 0.5f, 0.5f, 0.5f};
   f32 light_color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+
   engineCTX->SetShaderValue(data->lightShader, uniform_location_ambient, ambient_value, SHADER_U_VEC4);
   engineCTX->SetShaderValue(data->lightShader, uniform_location_lightColor, light_color, SHADER_U_VEC4);
+  data->lightShader.locs[17] = engineCTX->GetShaderLocation(data->lightShader, "normalMap");
+  data->lightShader.locs[18] = engineCTX->GetShaderLocation(data->lightShader, "roughMap");
 
   data->ul_cameraPosition = engineCTX->GetShaderLocation(data->lightShader, "cameraPosition");
   data->ul_cameraTarget = engineCTX->GetShaderLocation(data->lightShader, "cameraTarget");
@@ -337,18 +355,21 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   engineCTX->SetMaterialTexture(&data->wall_material, 0, wall_diffuse);
   engineCTX->SetMaterialTexture(&data->wall_material, 3, wall_roughness);
   engineCTX->SetMaterialTexture(&data->wall_material, 2, wall_normal);
-  
-  data->lightShader.locs[17] = engineCTX->GetShaderLocation(data->lightShader, "normalMap");
-  data->lightShader.locs[18] = engineCTX->GetShaderLocation(data->lightShader, "roughMap");
 
-  data->wall_mesh = engineCTX->GenMeshPlane(20.0f, 20.0f, 2, 2);
+  data->wall_mesh = engineCTX->GenMeshPlane(10, 10, 1, 1);
+
+  data->worldDimensions.min = {-40.0f, 0.0f, -40.0f};
+  data->worldDimensions.max = {40.0f, 10.0f, 40.0f};
+
   data->wall_matrix = Matrix_{0};
   data->wall_matrix.m0 = 1;
   data->wall_matrix.m5 = 1;
   data->wall_matrix.m10 = 1;
   data->wall_matrix.m15 = 1;
 
-  data->wall_matrix.m13 = -10.0f;
+  data->wall_matrix.m13 = 0.0f;
+  
+  data->drawnMap = {15.0f, 15.0f, 215.0f};
 }
 
 SceneAPI void scene_onExit(struct Scene *self, RayAPI *engineCTX) {

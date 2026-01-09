@@ -5,6 +5,7 @@
 
 #include "platform.h"
 #include "raylib.h"
+#include "rlgl.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -327,6 +328,9 @@ int main() {
   engineCTX.IsTextureValid = (tIsTextureValid)IsTextureValid;
   engineCTX.UnloadTexture = (tUnloadTexture)UnloadTexture;
   engineCTX.UnloadMesh = (tUnloadMesh)UnloadMesh;
+
+  engineCTX.EnableBackFaceCulling = (tEnableBackFaceCulling)rlEnableBackfaceCulling;
+  engineCTX.DisableBackFaceCulling = (tDisableBackFaceCulling)rlDisableBackfaceCulling;
 
   // TODO[Refactor]: Have scenes suballocate out of a bigger memory block
   memoryArena scene_memory = {};

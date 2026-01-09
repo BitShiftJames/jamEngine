@@ -358,7 +358,7 @@ typedef void (*tDrawLine3D)(v3 startPos, v3 endPos, Color_ color);
 typedef void (*tDrawPoint3D)(v3 pos, Color_ color);
 typedef void (*tDrawCircle3D)(v3 center, f32 radius, v3 rotationAxis, f32 rotationAngle, Color_ color);
 typedef void (*tDrawTriangle3D)(v3 p1, v3 p2, v3 p3, Color_ color);
-typedef void (*tDrawCube)(v3 pos, v3 size, Color_ color);
+typedef void (*tDrawCube)(v3 center, v3 size, Color_ color);
 typedef void (*tDrawSphere)(v3 center, f32 radius, s32 rings, s32 slices, Color_ color);
 typedef void (*tDrawCylinder)(v3 startPos, v3 endPos, f32 startRadius, f32 endRadius, s32 sides, Color_ color);
 typedef void (*tDrawCapsule)(v3 startPos, v3 endPos, f32 radius, s32 slices, s32 rings, Color_ color);
@@ -463,6 +463,9 @@ typedef void (*tSetShaderValueTexture)(Shader_ shader, int locIndex, Texture2D_ 
 typedef void (*tUnloadShader)(Shader_ shader);
 typedef void (*tBeginShaderMode)(Shader_ shader);
 typedef void (*tEndShaderMode)(void);
+
+typedef void (*tDisableBackFaceCulling)(void);
+typedef void (*tEnableBackFaceCulling)(void);
 
 enum SHADER_VARIABLE_TYPES {
     SHADER_U_FLOAT = 0,       // Shader uniform type: float
@@ -662,6 +665,9 @@ struct RayAPI {
   tLoadTexture LoadTexture;
   tIsTextureValid IsTextureValid;
   tUnloadTexture UnloadTexture;
+
+  tEnableBackFaceCulling EnableBackFaceCulling;
+  tDisableBackFaceCulling DisableBackFaceCulling;
 };
 
 #endif 
