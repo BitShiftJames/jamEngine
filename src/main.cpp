@@ -332,6 +332,11 @@ int main() {
   engineCTX.EnableBackFaceCulling = (tEnableBackFaceCulling)rlEnableBackfaceCulling;
   engineCTX.DisableBackFaceCulling = (tDisableBackFaceCulling)rlDisableBackfaceCulling;
 
+  engineCTX.SetRandomSeed = (tSetRandomSeed)SetRandomSeed;
+  engineCTX.GetRandomValue = (tGetRandomValue)GetRandomValue;
+  engineCTX.LoadRandomSequence = (tLoadRandomSequence)LoadRandomSequence;
+  engineCTX.UnloadRandomSequence = (tUnloadRandomSequence)UnloadRandomSequence;
+
   // TODO[Refactor]: Have scenes suballocate out of a bigger memory block
   memoryArena scene_memory = {};
   scene_memory.Size = Megabytes(200);

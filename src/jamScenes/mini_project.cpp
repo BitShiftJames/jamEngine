@@ -28,11 +28,17 @@ struct scene_data {
   Texture2D_ *wall_textures;
   Mesh_ wall_mesh;
   Matrix_ wall_matrix;
-  
-  Cubert worldDimensions;
+
+  // All of this information can be freed once the mesh is generated.
+  // Furthermore this is the information for a cluster.
+  u32 spacingMeters;
+  u32 max_depth;
+  u32 geometry_capacity;
   u32 geometry_count;
+  Cubert worldDimensions;
   Cubert *world_geometry;
 
+  // FIXME: Draw to texture.
   // pos.x, pos.y, dimension.
   v3 drawnMap;
 };
@@ -392,8 +398,8 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
 
   data->wall_mesh = engineCTX->GenMeshPlane(10, 10, 1, 1);
 
-  data->worldDimensions.min = {-40.0f, 0.0f, -40.0f};
-  data->worldDimensions.max = {40.0f, 10.0f, 40.0f};
+  data->worldDimensions.min = {-240.0f, 0.0f, -240.0f};
+  data->worldDimensions.max = {240.0f, 40.0f, 240.0f};
 
   data->wall_matrix = Matrix_{0};
   data->wall_matrix.m0 = 1;
@@ -404,15 +410,14 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   data->wall_matrix.m13 = 0.0f;
   
   data->drawnMap = {15.0f, 15.0f, 215.0f};
-
-  data->geometry_count = 2;
-  data->world_geometry = PushArray(self->arena, data->geometry_count, Cubert);
   
-  data->world_geometry[0].min = {-25.0f, 0.0f, -28.0f};
-  data->world_geometry[0].max = {20.0f, 10.0f, 20.0f};
+  data->max_depth = 4;
+  data->spacingMeters = 4.0f;
+  data->geometry_count = 4;
+  data->geometry_capacity = powf(data->geometry_count, data->max_depth);
+  data->world_geometry = PushArray(self->arena, data->geometry_capacity, Cubert);
+    
 
-  data->world_geometry[1].min = {-40.0f, 0.0f, -40.0f};
-  data->world_geometry[1].max = {10.0f, 0.0f, 10.0f};
 }
 
 SceneAPI void scene_onExit(struct Scene *self, RayAPI *engineCTX) {

@@ -467,6 +467,11 @@ typedef void (*tEndShaderMode)(void);
 typedef void (*tDisableBackFaceCulling)(void);
 typedef void (*tEnableBackFaceCulling)(void);
 
+typedef void (*tSetRandomSeed)(void);
+typedef int (*tGetRandomValue)(void);
+typedef int *(*tLoadRandomSequence)(u32 count, s32 min, s32 max);
+typedef void (*tUnloadRandomSequence)(int *sequence);
+
 enum SHADER_VARIABLE_TYPES {
     SHADER_U_FLOAT = 0,       // Shader uniform type: float
     SHADER_U_VEC2,            // Shader uniform type: vec2 (2 float)
@@ -668,6 +673,11 @@ struct RayAPI {
 
   tEnableBackFaceCulling EnableBackFaceCulling;
   tDisableBackFaceCulling DisableBackFaceCulling;
+
+  tSetRandomSeed SetRandomSeed;
+  tGetRandomValue GetRandomValue;
+  tLoadRandomSequence LoadRandomSequence;
+  tUnloadRandomSequence UnloadRandomSequence;
 };
 
 #endif 
