@@ -237,17 +237,36 @@ void CreateCluster(v3 min, v3 max, v3 *point, RayAPI *engineCTX) {
 
   v2 new_max = {(f32)engineCTX->GetRandomValue(safe_min.x, safe_max.x), (f32)engineCTX->GetRandomValue(safe_min.y, safe_max.y)};
 
-  point[0] = {min.x, 0.0f, min.z};
-  point[1] = {new_max.x - spacing, 0.0f, new_max.y - spacing};
+  point[0] = {min.x, min.y, min.z};
+  point[1] = {new_max.x - spacing, min.y, new_max.y - spacing};
   
-  point[2] = {new_max.x + spacing, 0.0f, min.z};
-  point[3] = {max.x, 0.0f, new_max.y - spacing};
+  point[2] = {new_max.x + spacing, min.y, min.z};
+  point[3] = {max.x, min.y, new_max.y - spacing};
 
-  point[4] = {min.x, 0.0f, new_max.y + spacing};
-  point[5] = {new_max.x - spacing, 0.0f, max.z};
+  point[4] = {min.x, min.y, new_max.y + spacing};
+  point[5] = {new_max.x - spacing, min.y, max.z};
 
-  point[6] = {new_max.x + spacing, 0.0f, new_max.y + spacing};
-  point[7] = {max.x, 0.0f, max.z};
+  point[6] = {new_max.x + spacing, min.y, new_max.y + spacing};
+  point[7] = {max.x, min.y, max.z};
+  
+  s32 safe_min_height = max.y / 2;
+  s32 safe_max_height = max.y;
+
+  f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
+  point[8] = {min.x, height, min.z};
+  point[9] = {new_max.x - spacing, height, new_max.y - spacing};
+  
+  height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
+  point[10] = {new_max.x + spacing, height, min.z};
+  point[11] = {max.x, height, new_max.y - spacing};
+
+  height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
+  point[12] = {min.x, height, new_max.y + spacing};
+  point[13] = {new_max.x - spacing, height, max.z};
+
+  height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
+  point[14] = {new_max.x + spacing, height, new_max.y + spacing};
+  point[15] = {max.x, height, max.z};
 
 };
 
@@ -312,11 +331,12 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
     engineCTX->BeginShaderMode(data->lightShader);
     engineCTX->EndShaderMode();
     
-    for (u32 Index = 0; Index < 7; Index++) {
+    for (u32 Index = 0; Index < 15; Index += 2){
       v3 p1 = data->cluster_points[Index];
       v3 p4 = data->cluster_points[Index + 1];
-      v3 p2 = {p4.x, 0.0f, p1.z};
-      v3 p3 = {p1.x, 0.0f, p4.z};
+      v3 p2 = {p4.x, p1.y, p1.z};
+      v3 p3 = {p1.x, p1.y, p4.z};
+  
 
       u8 grayscale = (u8)((Index * 5) + 25);
       Color_ triangle_color = {grayscale, 0, grayscale, 255};
@@ -324,10 +344,7 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
       engineCTX->DrawTriangle3D(p1, p3, p4, triangle_color);
     }
 
-    if (engineCTX->IsKeyDown(K_TAB)) {
-      engineCTX->DrawSphere(data->cluster_points[0], 1.0f, 16, 16, RED);
-      engineCTX->DrawSphere(data->cluster_points[7], 1.0f, 16, 16, RED);
-    }
+
 
     if (engineCTX->IsKeyDown(K_ONE)) {
       engineCTX->DrawSphere(data->cluster_points[0], 1.0f, 16, 16, GREEN);
@@ -347,6 +364,26 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
     if (engineCTX->IsKeyDown(K_FOUR)) {
       engineCTX->DrawSphere(data->cluster_points[6], 1.0f, 16, 16, GREEN);
       engineCTX->DrawSphere(data->cluster_points[7], 1.0f, 16, 16, GREEN);
+    }
+
+    if (engineCTX->IsKeyDown(K_FIVE)) {
+      engineCTX->DrawSphere(data->cluster_points[8], 1.0f, 16, 16, GREEN);
+      engineCTX->DrawSphere(data->cluster_points[9], 1.0f, 16, 16, GREEN);
+    }
+
+    if (engineCTX->IsKeyDown(K_SIX)) {
+      engineCTX->DrawSphere(data->cluster_points[10], 1.0f, 16, 16, GREEN);
+      engineCTX->DrawSphere(data->cluster_points[11], 1.0f, 16, 16, GREEN);
+    }
+
+    if (engineCTX->IsKeyDown(K_SEVEN)) {
+      engineCTX->DrawSphere(data->cluster_points[12], 1.0f, 16, 16, GREEN);
+      engineCTX->DrawSphere(data->cluster_points[13], 1.0f, 16, 16, GREEN);
+    }
+
+    if (engineCTX->IsKeyDown(K_EIGHT)) {
+      engineCTX->DrawSphere(data->cluster_points[14], 1.0f, 16, 16, GREEN);
+      engineCTX->DrawSphere(data->cluster_points[15], 1.0f, 16, 16, GREEN);
     }
 
   engineCTX->EndMode3D();
@@ -408,7 +445,7 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
 
   data->wall_mesh = engineCTX->GenMeshPlane(10, 10, 1, 1);
   
-  data->cluster_points = PushArray(self->arena, 8, v3);
+  data->cluster_points = PushArray(self->arena, 16, v3);
 
   CreateCluster(v3{0.0f, 0.0f, 0.0f}, v3{100.0f, 40.0f, 100.0f}, data->cluster_points, engineCTX);
 
