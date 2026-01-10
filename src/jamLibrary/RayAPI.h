@@ -467,8 +467,8 @@ typedef void (*tEndShaderMode)(void);
 typedef void (*tDisableBackFaceCulling)(void);
 typedef void (*tEnableBackFaceCulling)(void);
 
-typedef void (*tSetRandomSeed)(void);
-typedef int (*tGetRandomValue)(void);
+typedef void (*tSetRandomSeed)(u32 seed);
+typedef int (*tGetRandomValue)(s32 min, s32 max);
 typedef int *(*tLoadRandomSequence)(u32 count, s32 min, s32 max);
 typedef void (*tUnloadRandomSequence)(int *sequence);
 

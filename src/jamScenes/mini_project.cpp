@@ -29,15 +29,7 @@ struct scene_data {
   Mesh_ wall_mesh;
   Matrix_ wall_matrix;
 
-  // All of this information can be freed once the mesh is generated.
-  // Furthermore this is the information for a cluster.
-  u32 spacingMeters;
-  u32 max_depth;
-  u32 geometry_capacity;
-  u32 geometry_count;
-  Cubert worldDimensions;
-  Cubert *world_geometry;
-
+  v3 *cluster_points; 
   // FIXME: Draw to texture.
   // pos.x, pos.y, dimension.
   v3 drawnMap;
@@ -236,6 +228,29 @@ inline bool GetRayHit(Ray_ Ray, v3 center, v3 dim, RayAPI *engineCTX) {
   return result;
 }
 
+void CreateCluster(v3 min, v3 max, v3 *point, RayAPI *engineCTX) {
+  
+  v2 safe_min = {min.x + 20.0f, min.z + 20.0f};
+  v2 safe_max = {max.x - 20.0f, max.z - 20.0f};
+
+  f32 spacing = 1.5f;
+
+  v2 new_max = {(f32)engineCTX->GetRandomValue(safe_min.x, safe_max.x), (f32)engineCTX->GetRandomValue(safe_min.y, safe_max.y)};
+
+  point[0] = {min.x, 0.0f, min.z};
+  point[1] = {new_max.x - spacing, 0.0f, new_max.y - spacing};
+  
+  point[2] = {new_max.x + spacing, 0.0f, min.z};
+  point[3] = {max.x, 0.0f, new_max.y - spacing};
+
+  point[4] = {min.x, 0.0f, new_max.y + spacing};
+  point[5] = {new_max.x - spacing, 0.0f, max.z};
+
+  point[6] = {new_max.x + spacing, 0.0f, new_max.y + spacing};
+  point[7] = {max.x, 0.0f, max.z};
+
+};
+
 SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
@@ -265,7 +280,10 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   if (engineCTX->IsKeyDown(K_LEFT_SHIFT)) {
     acceleration.y--;
   }
-
+  
+  if (engineCTX->IsKeyPressed(K_R)) {
+    CreateCluster(v3{0.0f, 0.0f, 0.0f}, v3{100.0f, 40.0f, 100.0f}, data->cluster_points, engineCTX);
+  }
   acceleration *= 20;
 
   UpdateCamera(&data->camera, data->look_rotation, acceleration, engineCTX->GetFrameTime(),
@@ -292,54 +310,46 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
   engineCTX->BeginMode3D(data->camera);
 
     engineCTX->BeginShaderMode(data->lightShader);
-      engineCTX->DrawCube(v3{0, 0, 0}, v3{4.0f, 4.0f, 4.0f}, WHITE);
     engineCTX->EndShaderMode();
     
-    engineCTX->DrawMesh(data->wall_mesh, data->wall_material, data->wall_matrix);
+    for (u32 Index = 0; Index < 7; Index++) {
+      v3 p1 = data->cluster_points[Index];
+      v3 p4 = data->cluster_points[Index + 1];
+      v3 p2 = {p4.x, 0.0f, p1.z};
+      v3 p3 = {p1.x, 0.0f, p4.z};
+
+      u8 grayscale = (u8)((Index * 5) + 25);
+      Color_ triangle_color = {grayscale, 0, grayscale, 255};
+      engineCTX->DrawTriangle3D(p4, p2, p1, triangle_color);
+      engineCTX->DrawTriangle3D(p1, p3, p4, triangle_color);
+    }
+
+    if (engineCTX->IsKeyDown(K_TAB)) {
+      engineCTX->DrawSphere(data->cluster_points[0], 1.0f, 16, 16, RED);
+      engineCTX->DrawSphere(data->cluster_points[7], 1.0f, 16, 16, RED);
+    }
+
+    if (engineCTX->IsKeyDown(K_ONE)) {
+      engineCTX->DrawSphere(data->cluster_points[0], 1.0f, 16, 16, GREEN);
+      engineCTX->DrawSphere(data->cluster_points[1], 1.0f, 16, 16, GREEN);
+    }
+
+    if (engineCTX->IsKeyDown(K_TWO)) {
+      engineCTX->DrawSphere(data->cluster_points[2], 1.0f, 16, 16, GREEN);
+      engineCTX->DrawSphere(data->cluster_points[3], 1.0f, 16, 16, GREEN);
+    }
+
+    if (engineCTX->IsKeyDown(K_THREE)) {
+      engineCTX->DrawSphere(data->cluster_points[4], 1.0f, 16, 16, GREEN);
+      engineCTX->DrawSphere(data->cluster_points[5], 1.0f, 16, 16, GREEN);
+    }
+
+    if (engineCTX->IsKeyDown(K_FOUR)) {
+      engineCTX->DrawSphere(data->cluster_points[6], 1.0f, 16, 16, GREEN);
+      engineCTX->DrawSphere(data->cluster_points[7], 1.0f, 16, 16, GREEN);
+    }
+
   engineCTX->EndMode3D();
-
-  // Map Drawing.
-  engineCTX->DrawRectangle({data->drawnMap.x, data->drawnMap.y}, 
-                           {data->drawnMap.z, data->drawnMap.z},
-                           WHITE);
-
-  engineCTX->DrawRectangle({data->drawnMap.x + 1.0f, data->drawnMap.y + 1.0f}, 
-                           {data->drawnMap.z - 2.0f, data->drawnMap.z - 2.0f},
-                           BLACK);
-
-  // FIXME: None of this is code that was well thought out kind of just brute forcing the translations at 06:04:42
-  
-  v2 worldMin = {fabsf(data->worldDimensions.min.x), fabsf(data->worldDimensions.min.z)};
-  v2 worldMax = {fabsf(data->worldDimensions.max.x) + worldMin.x, fabsf(data->worldDimensions.max.z) + worldMin.y};
-
-  // WorldMax TO 0
-  v2 worldRange = (worldMax - worldMin);
-
-  for (u32 Index = 0; Index < data->geometry_count; Index++) {
-
-    v2 geometry_min = { (data->world_geometry[Index].min.x + worldMin.x), 
-                        (data->world_geometry[Index].min.z + worldMin.y)};
-
-    v2 geometry_max = { (data->world_geometry[Index].max.x) + geometry_min.x, 
-                        (data->world_geometry[Index].max.z) + geometry_min.y};
-
-    v2 normalized_min = geometry_min / worldRange;
-    v2 normalized_max = geometry_max / worldRange;
-
-    v2 map_min = (normalized_min * data->drawnMap.z);
-
-    map_min.x += data->drawnMap.x;
-    map_min.y += data->drawnMap.y;
-
-    v2 map_max = (normalized_max * data->drawnMap.z);
-
-    map_max.x += data->drawnMap.x;
-    map_max.y += data->drawnMap.y;
-    
-    v2 map_dim = (map_max - map_min);
-
-    engineCTX->DrawRectangle(map_min, map_dim, WHITE);
-  }
 
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{5, 10}, WHITE);
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{10, 5}, WHITE);
@@ -397,9 +407,10 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   engineCTX->SetMaterialTexture(&data->wall_material, 2, wall_normal);
 
   data->wall_mesh = engineCTX->GenMeshPlane(10, 10, 1, 1);
+  
+  data->cluster_points = PushArray(self->arena, 8, v3);
 
-  data->worldDimensions.min = {-240.0f, 0.0f, -240.0f};
-  data->worldDimensions.max = {240.0f, 40.0f, 240.0f};
+  CreateCluster(v3{0.0f, 0.0f, 0.0f}, v3{100.0f, 40.0f, 100.0f}, data->cluster_points, engineCTX);
 
   data->wall_matrix = Matrix_{0};
   data->wall_matrix.m0 = 1;
@@ -410,14 +421,7 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
   data->wall_matrix.m13 = 0.0f;
   
   data->drawnMap = {15.0f, 15.0f, 215.0f};
-  
-  data->max_depth = 4;
-  data->spacingMeters = 4.0f;
-  data->geometry_count = 4;
-  data->geometry_capacity = powf(data->geometry_count, data->max_depth);
-  data->world_geometry = PushArray(self->arena, data->geometry_capacity, Cubert);
     
-
 }
 
 SceneAPI void scene_onExit(struct Scene *self, RayAPI *engineCTX) {
