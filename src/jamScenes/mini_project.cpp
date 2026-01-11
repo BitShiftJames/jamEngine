@@ -245,14 +245,25 @@ void CreateCluster(v3 min, v3 max, Cubert *cubert_buffer, u32 cubert_count, RayA
 
   // FIXME: This could Cube function.
   {
-    v3 *cube_points = cubert_buffer[0].points;
+    v3 *C = cubert_buffer[0].points;
     f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
 
-    cube_points[0] = {min.x, min.y, min.z};
-    cube_points[1] = {new_max.x - spacing, min.y, new_max.y - spacing};
+    // Bounds
+    C[0] = {min.x, min.y, min.z};
+    C[2] = {new_max.x - spacing, min.y, new_max.y - spacing};
 
-    cube_points[2] = {min.x, height, min.z};
-    cube_points[3] = {new_max.x - spacing, height, new_max.y - spacing};
+    // Aux point construction
+    C[1] = {C[0].x, C[0].y, C[2].z};
+    C[3] = {C[2].x, C[0].y, C[0].z};
+
+    // Bounds
+    C[4] = {min.x, height, min.z};
+    C[6] = {new_max.x - spacing, height, new_max.y - spacing};
+
+    // Aux point contruction
+    C[5] = {C[4].x, C[4].y, C[6].z};
+    C[7] = {C[6].x, C[4].y, C[4].x};
+
   }
 
   {
@@ -260,30 +271,48 @@ void CreateCluster(v3 min, v3 max, Cubert *cubert_buffer, u32 cubert_count, RayA
     f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
 
     cube_points[0] = {new_max.x + spacing, min.y, min.z};
-    cube_points[1] = {max.x, min.y, new_max.y - spacing};
+    cube_points[1] = {new_max.x + spacing, min.y, new_max.y - spacing};
+    cube_points[2] = {max.x, min.y, new_max.y - spacing};
+    cube_points[3] = {max.x, min.y, min.z};
 
-    cube_points[2] = {new_max.x + spacing, height, min.z};
-    cube_points[3] = {max.x, height, new_max.y - spacing};
+    cube_points[4] = {new_max.x + spacing, height, min.z};
+    cube_points[5] = {new_max.x + spacing, height, new_max.y - spacing};
+    cube_points[6] = {max.x, height, new_max.y - spacing};
+    cube_points[7] = {max.x, height, min.z};
+
+
   }
 
   {
     v3 *cube_points = cubert_buffer[2].points;
     f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-    cube_points[0] = {min.x, min.y, new_max.y + spacing};
-    cube_points[1] = {new_max.x - spacing, min.y, max.z};
 
-    cube_points[2] = {min.x, height, new_max.y + spacing};
-    cube_points[3] = {new_max.x - spacing, height, max.z};
+    cube_points[0] = {min.x, min.y, new_max.y + spacing};
+    cube_points[1] = {min.x, min.y, max.z};
+    cube_points[2] = {new_max.x - spacing, min.y, max.z};
+    cube_points[3] = {new_max.x - spacing, min.y, new_max.y + spacing};
+
+    cube_points[4] = {min.x, height, new_max.y + spacing};
+    cube_points[5] = {min.x, height, max.z};
+    cube_points[6] = {new_max.x - spacing, height, max.z};
+    cube_points[7] = {new_max.x - spacing, height, new_max.y + spacing};
+
   } 
 
   {
     v3 *cube_points = cubert_buffer[3].points;
     f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-    cube_points[0] = {new_max.x + spacing, min.y, new_max.y + spacing};
-    cube_points[1] = {max.x, min.y, max.z};
 
-    cube_points[2] = {new_max.x + spacing, height, new_max.y + spacing};
-    cube_points[3] = {max.x, height, max.z};
+    cube_points[0] = {new_max.x + spacing, min.y, new_max.y + spacing};
+    cube_points[1] = {new_max.x + spacing, min.y, max.z};
+    cube_points[2] = {max.x, min.y, max.z};
+    cube_points[3] = {max.x, min.y, new_max.y + spacing};
+
+    cube_points[4] = {new_max.x + spacing, height, new_max.y + spacing};
+    cube_points[5] = {new_max.x + spacing, height, max.z};
+    cube_points[6] = {max.x, height, max.z};
+    cube_points[7] = {max.x, height, new_max.y + spacing};
+
   }
 
 };
@@ -340,6 +369,29 @@ v3 surface_normal(v3 p1, v3 p2, v3 p3) {
   return result;
 }
 
+void DebugRenderCube(Cubert *cuburt, RayAPI *engineCTX) {
+  v3 *C = cuburt->points;
+
+  engineCTX->DrawTriangle3D(C[0], C[1], C[2], WHITE);
+  engineCTX->DrawTriangle3D(C[2], C[3], C[0], WHITE);
+
+  engineCTX->DrawTriangle3D(C[4], C[5], C[6], WHITE);
+  engineCTX->DrawTriangle3D(C[6], C[7], C[4], WHITE);
+  
+  engineCTX->DrawTriangle3D(C[7], C[3], C[0], RED); 
+  engineCTX->DrawTriangle3D(C[0], C[4], C[7], RED); 
+
+  engineCTX->DrawTriangle3D(C[1], C[2], C[6], RED); 
+  engineCTX->DrawTriangle3D(C[6], C[5], C[1], RED); 
+
+  engineCTX->DrawTriangle3D(C[2], C[3], C[7], BLUE); 
+  engineCTX->DrawTriangle3D(C[7], C[6], C[2], BLUE); 
+
+  engineCTX->DrawTriangle3D(C[0], C[1], C[5], BLUE); 
+  engineCTX->DrawTriangle3D(C[5], C[4], C[0], BLUE); 
+
+}
+
 SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
@@ -351,20 +403,7 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
     engineCTX->EndShaderMode();
     
     for (u32 cubeIndex = 0; cubeIndex < data->cubert_count; cubeIndex++) {
-      v3 *cube_points = data->cuberts[cubeIndex].points;
-
-      u8 grayscale = (u8)((cubeIndex * 20) + 25);
-      Color_ triangle_color = {grayscale, grayscale, grayscale, 255};
-      for (u32 pointIndex = 0; pointIndex < 7; pointIndex += 2) {
-        v3 p1 = cube_points[pointIndex];
-        v3 p4 = cube_points[pointIndex + 1];
-        v3 p2 = {p4.x, p1.y, p1.z};
-        v3 p3 = {p1.x, p4.y, p4.z};
-
-        engineCTX->DrawTriangle3D(p4, p2, p1, triangle_color);
-        engineCTX->DrawTriangle3D(p1, p3, p4, triangle_color);
-      }
-
+      DebugRenderCube(&data->cuberts[cubeIndex], engineCTX);
     }
   engineCTX->EndMode3D();
 
