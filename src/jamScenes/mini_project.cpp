@@ -315,16 +315,6 @@ void CreateCluster(v3 min, v3 max, Cubert *cubert_buffer, u32 cubert_count, RayA
     
     Construct_Cubert(v3{min.x, min.y, new_max.y + spacing}, {new_max.x - spacing, height, max.z}, &cubert_buffer[2]);
 
-    cube_points[0] = {min.x, min.y, new_max.y + spacing};
-    cube_points[1] = {min.x, min.y, max.z};
-    cube_points[2] = {new_max.x - spacing, min.y, max.z};
-    cube_points[3] = {new_max.x - spacing, min.y, new_max.y + spacing};
-
-    cube_points[4] = {min.x, height, new_max.y + spacing};
-    cube_points[5] = {min.x, height, max.z};
-    cube_points[6] = {new_max.x - spacing, height, max.z};
-    cube_points[7] = {new_max.x - spacing, height, new_max.y + spacing};
-
   } 
 
   {
@@ -421,29 +411,6 @@ void NewDebugRenderCube(Cubert *cuburt, RayAPI *engineCTX) {
 
   engineCTX->DrawTriangle3D(right[0], right[1], right[2], RED);
   engineCTX->DrawTriangle3D(right[2], right[3], right[0], RED);
-
-}
-
-void DebugRenderCube(Cubert *cuburt, RayAPI *engineCTX) {
-  v3 *C = cuburt->points;
-  
-  engineCTX->DrawTriangle3D(C[0], C[1], C[2], WHITE);
-  engineCTX->DrawTriangle3D(C[2], C[3], C[0], WHITE);
-
-  engineCTX->DrawTriangle3D(C[4], C[5], C[6], WHITE);
-  engineCTX->DrawTriangle3D(C[6], C[7], C[4], WHITE);
-  
-  engineCTX->DrawTriangle3D(C[7], C[3], C[0], RED); 
-  engineCTX->DrawTriangle3D(C[0], C[4], C[7], RED); 
-
-  engineCTX->DrawTriangle3D(C[1], C[2], C[6], RED); 
-  engineCTX->DrawTriangle3D(C[6], C[5], C[1], RED); 
-
-  engineCTX->DrawTriangle3D(C[2], C[3], C[7], BLUE); 
-  engineCTX->DrawTriangle3D(C[7], C[6], C[2], BLUE); 
-
-  engineCTX->DrawTriangle3D(C[0], C[1], C[5], BLUE); 
-  engineCTX->DrawTriangle3D(C[5], C[4], C[0], BLUE); 
 
 }
 
