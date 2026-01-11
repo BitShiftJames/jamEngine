@@ -3,13 +3,13 @@
 #include "../jamLibrary/jamScene.h"
 #include "../jamLibrary/jamMath.h"
 
+#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 
 struct Cubert {
-  v3 min;
-  v3 max;
+  v3 points[8];
 };
 
 struct scene_data {
@@ -29,7 +29,8 @@ struct scene_data {
   Mesh_ wall_mesh;
   Matrix_ wall_matrix;
 
-  v3 *cluster_points; 
+  u32 cubert_count;
+  Cubert *cuberts;
   // FIXME: Draw to texture.
   // pos.x, pos.y, dimension.
   v3 drawnMap;
@@ -228,45 +229,62 @@ inline bool GetRayHit(Ray_ Ray, v3 center, v3 dim, RayAPI *engineCTX) {
   return result;
 }
 
-void CreateCluster(v3 min, v3 max, v3 *point, RayAPI *engineCTX) {
-  
+void CreateCluster(v3 min, v3 max, Cubert *cubert_buffer, u32 cubert_count, RayAPI *engineCTX) {
+  assert(cubert_count == 4);
+  assert(cubert_buffer != 0);
+
   v2 safe_min = {min.x + 20.0f, min.z + 20.0f};
   v2 safe_max = {max.x - 20.0f, max.z - 20.0f};
+
+  s32 safe_min_height = max.y / 2;
+  s32 safe_max_height = max.y;
 
   f32 spacing = 1.5f;
 
   v2 new_max = {(f32)engineCTX->GetRandomValue(safe_min.x, safe_max.x), (f32)engineCTX->GetRandomValue(safe_min.y, safe_max.y)};
 
-  point[0] = {min.x, min.y, min.z};
-  point[1] = {new_max.x - spacing, min.y, new_max.y - spacing};
-  
-  point[2] = {new_max.x + spacing, min.y, min.z};
-  point[3] = {max.x, min.y, new_max.y - spacing};
+  // FIXME: This could Cube function.
+  {
+    v3 *cube_points = cubert_buffer[0].points;
+    f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
 
-  point[4] = {min.x, min.y, new_max.y + spacing};
-  point[5] = {new_max.x - spacing, min.y, max.z};
+    cube_points[0] = {min.x, min.y, min.z};
+    cube_points[1] = {new_max.x - spacing, min.y, new_max.y - spacing};
 
-  point[6] = {new_max.x + spacing, min.y, new_max.y + spacing};
-  point[7] = {max.x, min.y, max.z};
-  
-  s32 safe_min_height = max.y / 2;
-  s32 safe_max_height = max.y;
+    cube_points[2] = {min.x, height, min.z};
+    cube_points[3] = {new_max.x - spacing, height, new_max.y - spacing};
+  }
 
-  f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-  point[8] = {min.x, height, min.z};
-  point[9] = {new_max.x - spacing, height, new_max.y - spacing};
-  
-  height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-  point[10] = {new_max.x + spacing, height, min.z};
-  point[11] = {max.x, height, new_max.y - spacing};
+  {
+    v3 *cube_points = cubert_buffer[1].points;
+    f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
 
-  height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-  point[12] = {min.x, height, new_max.y + spacing};
-  point[13] = {new_max.x - spacing, height, max.z};
+    cube_points[0] = {new_max.x + spacing, min.y, min.z};
+    cube_points[1] = {max.x, min.y, new_max.y - spacing};
 
-  height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-  point[14] = {new_max.x + spacing, height, new_max.y + spacing};
-  point[15] = {max.x, height, max.z};
+    cube_points[2] = {new_max.x + spacing, height, min.z};
+    cube_points[3] = {max.x, height, new_max.y - spacing};
+  }
+
+  {
+    v3 *cube_points = cubert_buffer[2].points;
+    f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
+    cube_points[0] = {min.x, min.y, new_max.y + spacing};
+    cube_points[1] = {new_max.x - spacing, min.y, max.z};
+
+    cube_points[2] = {min.x, height, new_max.y + spacing};
+    cube_points[3] = {new_max.x - spacing, height, max.z};
+  } 
+
+  {
+    v3 *cube_points = cubert_buffer[3].points;
+    f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
+    cube_points[0] = {new_max.x + spacing, min.y, new_max.y + spacing};
+    cube_points[1] = {max.x, min.y, max.z};
+
+    cube_points[2] = {new_max.x + spacing, height, new_max.y + spacing};
+    cube_points[3] = {max.x, height, max.z};
+  }
 
 };
 
@@ -301,8 +319,9 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   }
   
   if (engineCTX->IsKeyPressed(K_R)) {
-    CreateCluster(v3{0.0f, 0.0f, 0.0f}, v3{100.0f, 40.0f, 100.0f}, data->cluster_points, engineCTX);
+    CreateCluster(v3{0.0f, 0.0f, 0.0f}, v3{100.0f, 40.0f, 100.0f}, data->cuberts, data->cubert_count, engineCTX);
   }
+
   acceleration *= 20;
 
   UpdateCamera(&data->camera, data->look_rotation, acceleration, engineCTX->GetFrameTime(),
@@ -331,61 +350,22 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
     engineCTX->BeginShaderMode(data->lightShader);
     engineCTX->EndShaderMode();
     
-    for (u32 Index = 0; Index < 15; Index += 2){
-      v3 p1 = data->cluster_points[Index];
-      v3 p4 = data->cluster_points[Index + 1];
-      v3 p2 = {p4.x, p1.y, p1.z};
-      v3 p3 = {p1.x, p1.y, p4.z};
-  
+    for (u32 cubeIndex = 0; cubeIndex < data->cubert_count; cubeIndex++) {
+      v3 *cube_points = data->cuberts[cubeIndex].points;
 
-      u8 grayscale = (u8)((Index * 5) + 25);
-      Color_ triangle_color = {grayscale, 0, grayscale, 255};
-      engineCTX->DrawTriangle3D(p4, p2, p1, triangle_color);
-      engineCTX->DrawTriangle3D(p1, p3, p4, triangle_color);
+      u8 grayscale = (u8)((cubeIndex * 20) + 25);
+      Color_ triangle_color = {grayscale, grayscale, grayscale, 255};
+      for (u32 pointIndex = 0; pointIndex < 7; pointIndex += 2) {
+        v3 p1 = cube_points[pointIndex];
+        v3 p4 = cube_points[pointIndex + 1];
+        v3 p2 = {p4.x, p1.y, p1.z};
+        v3 p3 = {p1.x, p4.y, p4.z};
+
+        engineCTX->DrawTriangle3D(p4, p2, p1, triangle_color);
+        engineCTX->DrawTriangle3D(p1, p3, p4, triangle_color);
+      }
+
     }
-
-
-
-    if (engineCTX->IsKeyDown(K_ONE)) {
-      engineCTX->DrawSphere(data->cluster_points[0], 1.0f, 16, 16, GREEN);
-      engineCTX->DrawSphere(data->cluster_points[1], 1.0f, 16, 16, GREEN);
-    }
-
-    if (engineCTX->IsKeyDown(K_TWO)) {
-      engineCTX->DrawSphere(data->cluster_points[2], 1.0f, 16, 16, GREEN);
-      engineCTX->DrawSphere(data->cluster_points[3], 1.0f, 16, 16, GREEN);
-    }
-
-    if (engineCTX->IsKeyDown(K_THREE)) {
-      engineCTX->DrawSphere(data->cluster_points[4], 1.0f, 16, 16, GREEN);
-      engineCTX->DrawSphere(data->cluster_points[5], 1.0f, 16, 16, GREEN);
-    }
-
-    if (engineCTX->IsKeyDown(K_FOUR)) {
-      engineCTX->DrawSphere(data->cluster_points[6], 1.0f, 16, 16, GREEN);
-      engineCTX->DrawSphere(data->cluster_points[7], 1.0f, 16, 16, GREEN);
-    }
-
-    if (engineCTX->IsKeyDown(K_FIVE)) {
-      engineCTX->DrawSphere(data->cluster_points[8], 1.0f, 16, 16, GREEN);
-      engineCTX->DrawSphere(data->cluster_points[9], 1.0f, 16, 16, GREEN);
-    }
-
-    if (engineCTX->IsKeyDown(K_SIX)) {
-      engineCTX->DrawSphere(data->cluster_points[10], 1.0f, 16, 16, GREEN);
-      engineCTX->DrawSphere(data->cluster_points[11], 1.0f, 16, 16, GREEN);
-    }
-
-    if (engineCTX->IsKeyDown(K_SEVEN)) {
-      engineCTX->DrawSphere(data->cluster_points[12], 1.0f, 16, 16, GREEN);
-      engineCTX->DrawSphere(data->cluster_points[13], 1.0f, 16, 16, GREEN);
-    }
-
-    if (engineCTX->IsKeyDown(K_EIGHT)) {
-      engineCTX->DrawSphere(data->cluster_points[14], 1.0f, 16, 16, GREEN);
-      engineCTX->DrawSphere(data->cluster_points[15], 1.0f, 16, 16, GREEN);
-    }
-
   engineCTX->EndMode3D();
 
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{5, 10}, WHITE);
@@ -445,9 +425,10 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
 
   data->wall_mesh = engineCTX->GenMeshPlane(10, 10, 1, 1);
   
-  data->cluster_points = PushArray(self->arena, 16, v3);
+  data->cubert_count = 4;
+  data->cuberts = PushArray(self->arena, data->cubert_count, Cubert);
 
-  CreateCluster(v3{0.0f, 0.0f, 0.0f}, v3{100.0f, 40.0f, 100.0f}, data->cluster_points, engineCTX);
+  CreateCluster(v3{0.0f, 0.0f, 0.0f}, v3{100.0f, 40.0f, 100.0f}, data->cuberts, data->cubert_count, engineCTX);
 
   data->wall_matrix = Matrix_{0};
   data->wall_matrix.m0 = 1;
