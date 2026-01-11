@@ -8,17 +8,51 @@
 #include <cstdio>
 #include <cstring>
 
-struct Cubert {
-  // Old
-  v3 points[8];
+#define Vertex_per_face 4
+#define Triangle_per_face 2
+#define Points_Per_triangle 3
+#define num_faces_on_cube 6
 
-  // New
-  v3 Front[4];
-  v3 Back[4];
-  v3 Top[4];
-  v3 Bottom[4];
-  v3 Left[4];
-  v3 Right[4];
+struct Cubert {
+  Mesh_ cubert_mesh;
+
+  union {
+    struct {
+      v3 Front[Vertex_per_face];
+      v3 Back[Vertex_per_face];
+      v3 Top[Vertex_per_face];
+      v3 Bottom[Vertex_per_face];
+      v3 Left[Vertex_per_face];
+      v3 Right[Vertex_per_face];
+    };
+    f32 raw_verts[Vertex_per_face * num_faces_on_cube * sizeof(v3)];
+  };
+
+  union {
+    struct {
+       v2 Front_uv[Vertex_per_face]; 
+       v2 Back_uv[Vertex_per_face]; 
+       v2 Top_uv[Vertex_per_face]; 
+       v2 Bottom_uv[Vertex_per_face]; 
+       v2 Left_uv[Vertex_per_face]; 
+       v2 Right_uv[Vertex_per_face]; 
+    };
+    f32 raw_UVs[Vertex_per_face * num_faces_on_cube * sizeof(v2)];
+  };
+
+  union {
+    struct {
+      v3 Front_normals[Vertex_per_face];
+      v3 Back_normals[Vertex_per_face];
+      v3 Top_normals[Vertex_per_face];
+      v3 Bottom_normals[Vertex_per_face];
+      v3 Left_normals[Vertex_per_face];
+      v3 Right_normals[Vertex_per_face];
+    };
+    f32 raw_normals[Vertex_per_face * num_faces_on_cube * sizeof(v3)];
+  };
+  
+  s16 indices[num_faces_on_cube * Triangle_per_face * Points_Per_triangle];
 };
 
 struct scene_data {
@@ -238,6 +272,22 @@ inline bool GetRayHit(Ray_ Ray, v3 center, v3 dim, RayAPI *engineCTX) {
   return result;
 }
 
+// Sets the UV for a face with default values.
+inline void SetUV(v2 *_00, v2 *_10, v2 *_11, v2 *_01) {
+  _00[0] = {0.0f, 0.0f};
+  _10[0] = {1.0f, 0.0f};
+  _11[0] = {1.0f, 1.0f};
+  _01[0] = {0.0f, 1.0f};
+}
+
+// Sets the normal of each vertex to the normal direction specified.
+inline void SetNormals(v3 *n0, v3 *n1, v3 *n2, v3 *n3, v3 normal_direction) {
+  n0[0] = normal_direction;
+  n1[0] = normal_direction;
+  n2[0] = normal_direction;
+  n3[0] = normal_direction;
+}
+
 void Construct_Cubert(v3 min, v3 max, Cubert *cubert) {
 
   v3 *Top = cubert->Top;
@@ -246,17 +296,29 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert) {
   Top[2] = {max.x, max.y, max.z};
   Top[3] = {max.x, max.y, min.z};
 
+  SetUV(&cubert->Top_uv[0], &cubert->Top_uv[1], &cubert->Top_uv[2], &cubert->Top_uv[3]);
+  SetNormals(&cubert->Top_normals[0], &cubert->Top_normals[1], 
+             &cubert->Top_normals[2], &cubert->Top_normals[3], v3{0.0f, 1.0f, 0.0f});
+  
   v3 *Bottom = cubert->Bottom;
   Bottom[0] = {min.x, min.y, min.z};
   Bottom[1] = {min.x, min.y, max.z};
   Bottom[2] = {max.x, min.y, max.z};
   Bottom[3] = {max.x, min.y, min.z};
   
+  SetUV(&cubert->Bottom_uv[0], &cubert->Bottom_uv[1], &cubert->Bottom_uv[2], &cubert->Bottom_uv[3]);
+  SetNormals(&cubert->Bottom_normals[0], &cubert->Bottom_normals[1], 
+             &cubert->Bottom_normals[2], &cubert->Bottom_normals[3], v3{0.0f, -1.0f, 0.0f});
+
   v3 *Left= cubert->Left;
   Left[0] = {min.x, max.y, min.z};
   Left[1] = {max.x, max.y, min.z};
   Left[2] = {max.x, min.y, min.z};
   Left[3] = {min.x, min.y, min.z};
+
+  SetUV(&cubert->Left_uv[0], &cubert->Left_uv[1], &cubert->Left_uv[2], &cubert->Left_uv[3]);
+  SetNormals(&cubert->Left_normals[0], &cubert->Left_normals[1], 
+             &cubert->Left_normals[2], &cubert->Left_normals[3], v3{0.0f, 0.0f, -1.0f});
 
   v3 *Right = cubert->Right;
   Right[0] = {max.x, min.y, max.z};
@@ -264,11 +326,19 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert) {
   Right[2] = {min.x, max.y, max.z};
   Right[3] = {min.x, min.y, max.z};
 
+  SetUV(&cubert->Right_uv[0], &cubert->Right_uv[1], &cubert->Right_uv[2], &cubert->Right_uv[3]);
+  SetNormals(&cubert->Right_normals[0], &cubert->Right_normals[1], 
+             &cubert->Right_normals[2], &cubert->Right_normals[3], v3{0.0f, 0.0f, 1.0f});
+  
   v3 *Back = cubert->Back;
   Back[0] = {min.x, min.y, max.z};
   Back[1] = {min.x, max.y, max.z};
   Back[2] = {min.x, max.y, min.z};
   Back[3] = {min.x, min.y, min.z};
+
+  SetUV(&cubert->Back_uv[0], &cubert->Back_uv[1], &cubert->Back_uv[2], &cubert->Back_uv[3]);
+  SetNormals(&cubert->Back_normals[0], &cubert->Back_normals[1], 
+             &cubert->Back_normals[2], &cubert->Back_normals[3], v3{-1.0f, 0.0f, 0.0f});
 
   v3 *Front = cubert->Front;
   Front[0] = {max.x, min.y, min.z};
@@ -276,6 +346,35 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert) {
   Front[2] = {max.x, max.y, max.z};
   Front[3] = {max.x, min.y, max.z};
 
+  SetUV(&cubert->Front_uv[0], &cubert->Front_uv[1], &cubert->Front_uv[2], &cubert->Front_uv[3]);
+  SetNormals(&cubert->Front_normals[0], &cubert->Front_normals[1], 
+             &cubert->Front_normals[2], &cubert->Front_normals[3], v3{1.0f, 0.0f, 0.0f});
+
+  int k = 0;
+  for (int i = 0; i < 36; i += 6)
+  {
+      cubert->indices[i] = 4*k;
+      cubert->indices[i + 1] = 4*k + 1;
+      cubert->indices[i + 2] = 4*k + 2;
+      cubert->indices[i + 3] = 4*k;
+      cubert->indices[i + 4] = 4*k + 2;
+      cubert->indices[i + 5] = 4*k + 3;
+
+      k++;
+  }
+
+  Mesh_ *mesh = &cubert->cubert_mesh;
+
+  mesh->vertexCount = Vertex_per_face * num_faces_on_cube;
+  mesh->triangleCount = num_faces_on_cube * Triangle_per_face;
+
+  mesh->vertices = cubert->raw_verts;
+  mesh->texcoords = cubert->raw_UVs;
+  mesh->normals = cubert->raw_normals;
+  mesh->indices = cubert->indices;
+
+  printf("Mesh | vertexCount %u | triangleCount %u | vertices %p\n", mesh->vertexCount,
+         mesh->triangleCount, mesh->vertices);
 }
 
 void CreateCluster(v3 min, v3 max, Cubert *cubert_buffer, u32 cubert_count, RayAPI *engineCTX) {
@@ -292,38 +391,17 @@ void CreateCluster(v3 min, v3 max, Cubert *cubert_buffer, u32 cubert_count, RayA
 
   v2 new_max = {(f32)engineCTX->GetRandomValue(safe_min.x, safe_max.x), (f32)engineCTX->GetRandomValue(safe_min.y, safe_max.y)};
 
-  // FIXME: This could Cube function.
-  {
-    v3 *C = cubert_buffer[0].points;
-    f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-    
-    Construct_Cubert(v3{min.x, min.y, min.z}, v3{new_max.x - spacing, height, new_max.y - spacing}, &cubert_buffer[0]);
+  f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height)); 
+  Construct_Cubert(v3{min.x, min.y, min.z}, v3{new_max.x - spacing, height, new_max.y - spacing}, &cubert_buffer[0]);
 
-  }
+  height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
+  Construct_Cubert(v3{(new_max.x + spacing), min.y, min.z}, v3{max.x, height, (new_max.y - spacing)}, &cubert_buffer[1]);
 
-  {
-    v3 *cube_points = cubert_buffer[1].points;
-    f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
+  height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
+  Construct_Cubert(v3{min.x, min.y, new_max.y + spacing}, {new_max.x - spacing, height, max.z}, &cubert_buffer[2]);
 
-    Construct_Cubert(v3{(new_max.x + spacing), min.y, min.z}, v3{max.x, height, (new_max.y - spacing)}, &cubert_buffer[1]);
-
-  }
-
-  {
-    v3 *cube_points = cubert_buffer[2].points;
-    f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-    
-    Construct_Cubert(v3{min.x, min.y, new_max.y + spacing}, {new_max.x - spacing, height, max.z}, &cubert_buffer[2]);
-
-  } 
-
-  {
-    v3 *cube_points = cubert_buffer[3].points;
-    f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-    
-    Construct_Cubert({new_max.x + spacing, min.y, new_max.y + spacing}, {max.x, height, max.z}, &cubert_buffer[3]);
-
-  }
+  height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
+  Construct_Cubert({new_max.x + spacing, min.y, new_max.y + spacing}, {max.x, height, max.z}, &cubert_buffer[3]);
 
 };
 
@@ -379,39 +457,55 @@ v3 surface_normal(v3 p1, v3 p2, v3 p3) {
   return result;
 }
 
+void DrawNormals(v3 *normals, v3 *points, RayAPI *engineCTX, Color_ color) {
+  engineCTX->DrawRay(Ray_{points[0], normals[0]}, color);
+  engineCTX->DrawRay(Ray_{points[1], normals[1]}, color);
+  engineCTX->DrawRay(Ray_{points[2], normals[2]}, color);
+  engineCTX->DrawRay(Ray_{points[3], normals[3]}, color);
+}
+
 void NewDebugRenderCube(Cubert *cuburt, RayAPI *engineCTX) {
   v3 *bottom = cuburt->Bottom;
    
   engineCTX->DrawTriangle3D(bottom[0], bottom[1], bottom[2], WHITE);
   engineCTX->DrawTriangle3D(bottom[2], bottom[3], bottom[0], WHITE);
 
-  engineCTX->DrawSphere(bottom[0], .5f, 16, 16, WHITE);
+  //DrawNormals(cuburt->Bottom_normals, bottom, engineCTX, GREEN);
 
   v3 *top = cuburt->Top;
   
   engineCTX->DrawTriangle3D(top[0], top[1], top[2], WHITE);
   engineCTX->DrawTriangle3D(top[2], top[3], top[0], WHITE);
 
+  //DrawNormals(cuburt->Top_normals, top, engineCTX, GREEN);
+
   v3 *front = cuburt->Front;
   
   engineCTX->DrawTriangle3D(front[0], front[1], front[2], Color_{255, 0, 255, 255});
   engineCTX->DrawTriangle3D(front[2], front[3], front[0], Color_{255, 0, 255, 255});
 
+  //DrawNormals(cuburt->Front_normals, front, engineCTX, RED);
+  
   v3 *back = cuburt->Back;
   
   engineCTX->DrawTriangle3D(back[0], back[1], back[2], GREEN);
   engineCTX->DrawTriangle3D(back[2], back[3], back[0], GREEN);
+
+  //DrawNormals(cuburt->Back_normals, back, engineCTX, RED);
 
   v3 *left = cuburt->Left;
   
   engineCTX->DrawTriangle3D(left[0], left[1], left[2], BLUE);
   engineCTX->DrawTriangle3D(left[2], left[3], left[0], BLUE);
 
+  //DrawNormals(cuburt->Left_normals, left, engineCTX, BLUE);
+
   v3 *right = cuburt->Right;
 
   engineCTX->DrawTriangle3D(right[0], right[1], right[2], RED);
   engineCTX->DrawTriangle3D(right[2], right[3], right[0], RED);
 
+  //DrawNormals(cuburt->Right_normals, right, engineCTX, BLUE);
 }
 
 SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
@@ -425,10 +519,11 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
     engineCTX->EndShaderMode();
     
     for (u32 cubeIndex = 0; cubeIndex < data->cubert_count; cubeIndex++) {
-      NewDebugRenderCube(&data->cuberts[cubeIndex], engineCTX);
+      //NewDebugRenderCube(&data->cuberts[cubeIndex], engineCTX);
+      engineCTX->DrawMesh(data->cuberts[cubeIndex].cubert_mesh, engineCTX->LoadMaterialsDefault(), data->wall_matrix);
     }
   engineCTX->EndMode3D();
-
+  
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{5, 10}, WHITE);
   engineCTX->DrawRectangle(engineCTX->HalfScreenSize, v2{10, 5}, WHITE);
 }
