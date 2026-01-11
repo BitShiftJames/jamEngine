@@ -77,6 +77,7 @@ struct scene_data {
   // FIXME: Draw to texture.
   // pos.x, pos.y, dimension.
   v3 drawnMap;
+  bool RenderToggle;
 };
 
 v4 ZeroQuaternion() {
@@ -288,8 +289,16 @@ inline void SetNormals(v3 *n0, v3 *n1, v3 *n2, v3 *n3, v3 normal_direction) {
   n3[0] = normal_direction;
 }
 
-void Construct_Cubert(v3 min, v3 max, Cubert *cubert) {
+void Construct_Cubert(v3 min, v3 max, Cubert *cubert, RayAPI *engineCTX) {
 
+  // FIXME:
+  //  None of the UV generation is correct the UV's are not all going up.
+  //  They are also not scaled.
+  // FIXME:
+  //  The vertex tangent is not calculated for this cube which results in
+  //  garbage lighting values. To calculate the vertex tangent UV's have to be
+  //  Correct and you have to calculate the up vector for UV.x.
+  
   v3 *Top = cubert->Top;
   Top[0] = {min.x, max.y, min.z};
   Top[1] = {min.x, max.y, max.z};
@@ -301,9 +310,9 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert) {
              &cubert->Top_normals[2], &cubert->Top_normals[3], v3{0.0f, 1.0f, 0.0f});
   
   v3 *Bottom = cubert->Bottom;
-  Bottom[0] = {min.x, min.y, min.z};
+  Bottom[0] = {max.x, min.y, max.z};
   Bottom[1] = {min.x, min.y, max.z};
-  Bottom[2] = {max.x, min.y, max.z};
+  Bottom[2] = {min.x, min.y, min.z};
   Bottom[3] = {max.x, min.y, min.z};
   
   SetUV(&cubert->Bottom_uv[0], &cubert->Bottom_uv[1], &cubert->Bottom_uv[2], &cubert->Bottom_uv[3]);
@@ -330,16 +339,6 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert) {
   SetNormals(&cubert->Right_normals[0], &cubert->Right_normals[1], 
              &cubert->Right_normals[2], &cubert->Right_normals[3], v3{0.0f, 0.0f, 1.0f});
   
-  v3 *Back = cubert->Back;
-  Back[0] = {min.x, min.y, max.z};
-  Back[1] = {min.x, max.y, max.z};
-  Back[2] = {min.x, max.y, min.z};
-  Back[3] = {min.x, min.y, min.z};
-
-  SetUV(&cubert->Back_uv[0], &cubert->Back_uv[1], &cubert->Back_uv[2], &cubert->Back_uv[3]);
-  SetNormals(&cubert->Back_normals[0], &cubert->Back_normals[1], 
-             &cubert->Back_normals[2], &cubert->Back_normals[3], v3{-1.0f, 0.0f, 0.0f});
-
   v3 *Front = cubert->Front;
   Front[0] = {max.x, min.y, min.z};
   Front[1] = {max.x, max.y, min.z};
@@ -348,7 +347,17 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert) {
 
   SetUV(&cubert->Front_uv[0], &cubert->Front_uv[1], &cubert->Front_uv[2], &cubert->Front_uv[3]);
   SetNormals(&cubert->Front_normals[0], &cubert->Front_normals[1], 
-             &cubert->Front_normals[2], &cubert->Front_normals[3], v3{1.0f, 0.0f, 0.0f});
+             &cubert->Front_normals[2], &cubert->Front_normals[3], v3{1.0f,  0.0f, 0.0f});
+
+  v3 *Back = cubert->Back;
+  Back[0] = {min.x, min.y, min.z};
+  Back[1] = {min.x, min.y, max.z};
+  Back[2] = {min.x, max.y, max.z};
+  Back[3] = {min.x, max.y, min.z};
+
+  SetUV(&cubert->Back_uv[0], &cubert->Back_uv[1], &cubert->Back_uv[2], &cubert->Back_uv[3]);
+  SetNormals(&cubert->Back_normals[0], &cubert->Back_normals[1], 
+             &cubert->Back_normals[2], &cubert->Back_normals[3], v3{-1.0f, 0.0f, 0.0f});
 
   int k = 0;
   for (int i = 0; i < 36; i += 6)
@@ -362,7 +371,7 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert) {
 
       k++;
   }
-
+  
   Mesh_ *mesh = &cubert->cubert_mesh;
 
   mesh->vertexCount = Vertex_per_face * num_faces_on_cube;
@@ -375,6 +384,8 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert) {
 
   printf("Mesh | vertexCount %u | triangleCount %u | vertices %p\n", mesh->vertexCount,
          mesh->triangleCount, mesh->vertices);
+
+  engineCTX->UploadMesh(&cubert->cubert_mesh, false);
 }
 
 void CreateCluster(v3 min, v3 max, Cubert *cubert_buffer, u32 cubert_count, RayAPI *engineCTX) {
@@ -392,16 +403,16 @@ void CreateCluster(v3 min, v3 max, Cubert *cubert_buffer, u32 cubert_count, RayA
   v2 new_max = {(f32)engineCTX->GetRandomValue(safe_min.x, safe_max.x), (f32)engineCTX->GetRandomValue(safe_min.y, safe_max.y)};
 
   f32 height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height)); 
-  Construct_Cubert(v3{min.x, min.y, min.z}, v3{new_max.x - spacing, height, new_max.y - spacing}, &cubert_buffer[0]);
+  Construct_Cubert(v3{min.x, min.y, min.z}, v3{new_max.x - spacing, height, new_max.y - spacing}, &cubert_buffer[0], engineCTX);
 
   height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-  Construct_Cubert(v3{(new_max.x + spacing), min.y, min.z}, v3{max.x, height, (new_max.y - spacing)}, &cubert_buffer[1]);
+  Construct_Cubert(v3{(new_max.x + spacing), min.y, min.z}, v3{max.x, height, (new_max.y - spacing)}, &cubert_buffer[1], engineCTX);
 
   height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-  Construct_Cubert(v3{min.x, min.y, new_max.y + spacing}, {new_max.x - spacing, height, max.z}, &cubert_buffer[2]);
+  Construct_Cubert(v3{min.x, min.y, new_max.y + spacing}, {new_max.x - spacing, height, max.z}, &cubert_buffer[2], engineCTX);
 
   height = (engineCTX->GetRandomValue(safe_min_height, safe_max_height));
-  Construct_Cubert({new_max.x + spacing, min.y, new_max.y + spacing}, {max.x, height, max.z}, &cubert_buffer[3]);
+  Construct_Cubert({new_max.x + spacing, min.y, new_max.y + spacing}, {max.x, height, max.z}, &cubert_buffer[3], engineCTX);
 
 };
 
@@ -438,7 +449,9 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   if (engineCTX->IsKeyPressed(K_R)) {
     CreateCluster(v3{0.0f, 0.0f, 0.0f}, v3{100.0f, 40.0f, 100.0f}, data->cuberts, data->cubert_count, engineCTX);
   }
-
+  if (engineCTX->IsKeyPressed(K_T)) {
+    data->RenderToggle = !data->RenderToggle;
+  }
   acceleration *= 20;
 
   UpdateCamera(&data->camera, data->look_rotation, acceleration, engineCTX->GetFrameTime(),
@@ -467,15 +480,15 @@ void DrawNormals(v3 *normals, v3 *points, RayAPI *engineCTX, Color_ color) {
 void NewDebugRenderCube(Cubert *cuburt, RayAPI *engineCTX) {
   v3 *bottom = cuburt->Bottom;
    
-  engineCTX->DrawTriangle3D(bottom[0], bottom[1], bottom[2], WHITE);
-  engineCTX->DrawTriangle3D(bottom[2], bottom[3], bottom[0], WHITE);
+  //engineCTX->DrawTriangle3D(bottom[0], bottom[1], bottom[2], WHITE);
+  //engineCTX->DrawTriangle3D(bottom[2], bottom[3], bottom[0], WHITE);
 
   //DrawNormals(cuburt->Bottom_normals, bottom, engineCTX, GREEN);
 
   v3 *top = cuburt->Top;
   
-  engineCTX->DrawTriangle3D(top[0], top[1], top[2], WHITE);
-  engineCTX->DrawTriangle3D(top[2], top[3], top[0], WHITE);
+  //engineCTX->DrawTriangle3D(top[0], top[1], top[2], WHITE);
+  //engineCTX->DrawTriangle3D(top[2], top[3], top[0], WHITE);
 
   //DrawNormals(cuburt->Top_normals, top, engineCTX, GREEN);
 
@@ -484,26 +497,26 @@ void NewDebugRenderCube(Cubert *cuburt, RayAPI *engineCTX) {
   engineCTX->DrawTriangle3D(front[0], front[1], front[2], Color_{255, 0, 255, 255});
   engineCTX->DrawTriangle3D(front[2], front[3], front[0], Color_{255, 0, 255, 255});
 
-  //DrawNormals(cuburt->Front_normals, front, engineCTX, RED);
+  DrawNormals(cuburt->Front_normals, front, engineCTX, RED);
   
   v3 *back = cuburt->Back;
   
-  engineCTX->DrawTriangle3D(back[0], back[1], back[2], GREEN);
-  engineCTX->DrawTriangle3D(back[2], back[3], back[0], GREEN);
+  //engineCTX->DrawTriangle3D(back[0], back[1], back[2], GREEN);
+  //engineCTX->DrawTriangle3D(back[2], back[3], back[0], GREEN);
 
   //DrawNormals(cuburt->Back_normals, back, engineCTX, RED);
 
   v3 *left = cuburt->Left;
   
-  engineCTX->DrawTriangle3D(left[0], left[1], left[2], BLUE);
-  engineCTX->DrawTriangle3D(left[2], left[3], left[0], BLUE);
+  //engineCTX->DrawTriangle3D(left[0], left[1], left[2], BLUE);
+  //engineCTX->DrawTriangle3D(left[2], left[3], left[0], BLUE);
 
   //DrawNormals(cuburt->Left_normals, left, engineCTX, BLUE);
 
   v3 *right = cuburt->Right;
 
-  engineCTX->DrawTriangle3D(right[0], right[1], right[2], RED);
-  engineCTX->DrawTriangle3D(right[2], right[3], right[0], RED);
+  //engineCTX->DrawTriangle3D(right[0], right[1], right[2], RED);
+  //engineCTX->DrawTriangle3D(right[2], right[3], right[0], RED);
 
   //DrawNormals(cuburt->Right_normals, right, engineCTX, BLUE);
 }
@@ -519,8 +532,11 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
     engineCTX->EndShaderMode();
     
     for (u32 cubeIndex = 0; cubeIndex < data->cubert_count; cubeIndex++) {
-      //NewDebugRenderCube(&data->cuberts[cubeIndex], engineCTX);
-      engineCTX->DrawMesh(data->cuberts[cubeIndex].cubert_mesh, engineCTX->LoadMaterialsDefault(), data->wall_matrix);
+      if (data->RenderToggle) {
+        engineCTX->DrawMesh(data->cuberts[cubeIndex].cubert_mesh, data->wall_material, data->wall_matrix);
+      } else {
+        NewDebugRenderCube(&data->cuberts[cubeIndex], engineCTX);
+      }
     }
   engineCTX->EndMode3D();
   

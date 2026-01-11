@@ -35,7 +35,7 @@ void main() {
   float hardcutOff = 0.906;
   float softcutOff = 0.819;
 
-  //
+  //vec3 normal = normalize(fragNormal);
   vec3 normal = texture(normalMap, vec2(fragTexCoord.x, fragTexCoord.y)).rgb;
   float roughness = texture(roughMap, vec2(fragTexCoord.x, fragTexCoord.y)).r;
   normal = normalize(normal*2.0 - 1.0);
@@ -55,5 +55,4 @@ void main() {
 
   finalColor = (texColor*((tint + vec4(specular, 1.0))*vec4(lightDot, 1.0)));
   finalColor += texColor*(ambient/10.0)*tint;
-
 }

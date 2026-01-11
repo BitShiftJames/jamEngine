@@ -365,7 +365,7 @@ int main() {
   engineCTX.SetTraceLogLevel(LOG_ALL);
   engineCTX.SetTargetFPS(30);
 
-  ToggleFullscreen(); 
+  //ToggleFullscreen(); 
 
   char *scene_path;
   char *src_path;
