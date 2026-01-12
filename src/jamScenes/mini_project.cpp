@@ -322,6 +322,12 @@ inline void SetTangent(v4 *n0, v4 *n1, v4 *n2, v4 *n3, v4 Tangent_direction, boo
   }
 }
 
+/*
+  Originated in:
+    Lengyel, Eric. “Computing Tangent Space Basis Vectors for an Arbitrary Mesh”. Terathon Software 3D Graphics Library,
+    2001. http://www.terathon.com/code/tangent.html
+*/
+
 inline v4 calculatedVertexTangent(v3 p1, v3 p2, v3 p3, v2 uv1, v2 uv2, v2 uv3, v3 norm1) {
     v4 result = {};
 
