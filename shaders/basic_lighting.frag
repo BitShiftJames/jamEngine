@@ -46,7 +46,7 @@ void main() {
   vec3 lightDot = lightColor.rgb * NdotL;
 
   // Calculate specular
-  float shininess = mix(64.0, 0.0, roughness);
+  float shininess = mix(32, 0.0, roughness);
   float specStrength = 1.0 - roughness;
   float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
 

@@ -68,15 +68,20 @@ struct Cubert {
 };
 
 struct scene_data {
+  bool FlashLightOn;
+  bool FlashLightChange;
+  bool RenderToggle;
+
   Font_ defaultFont;
 
   Camera3D_ camera;
   v3 sensitivity;
   v3 look_rotation;
-
   Shader_ lightShader;
   s32 ul_cameraPosition;
   s32 ul_cameraTarget;
+  s32 ul_lightColor;
+  s32 ul_ambient;
 
   Material_ wall_material;
   u32 count;
@@ -89,7 +94,6 @@ struct scene_data {
   // FIXME: Draw to texture.
   // pos.x, pos.y, dimension.
   v3 drawnMap;
-  bool RenderToggle;
 };
 
 v4 ZeroQuaternion() {
@@ -595,9 +599,18 @@ SceneAPI void scene_update(struct Scene *self, RayAPI *engineCTX) {
   if (engineCTX->IsKeyPressed(K_R)) {
     CreateCluster(v3{0.0f, 0.0f, 0.0f}, v3{100.0f, 40.0f, 100.0f}, data->cuberts, data->cubert_count, engineCTX);
   }
+
   if (engineCTX->IsKeyPressed(K_T)) {
     data->RenderToggle = !data->RenderToggle;
   }
+
+  if (engineCTX->IsKeyPressed(K_F)) {
+    data->FlashLightOn = !data->FlashLightOn;
+    data->FlashLightChange = true;
+  } else {
+    data->FlashLightChange = false;
+  }
+
   acceleration *= 20;
 
   UpdateCamera(&data->camera, data->look_rotation, acceleration, engineCTX->GetFrameTime(),
@@ -670,6 +683,23 @@ void NewDebugRenderCube(Cubert *cuburt, RayAPI *engineCTX) {
 SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
   scene_data *data = (scene_data *)self->data;
 
+  if (data->FlashLightChange) {
+    if (data->FlashLightOn) {
+      f32 ambient_value[4] = {0.5f, 0.5f, 0.5f, 0.5f};
+      f32 light_color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+
+      engineCTX->SetShaderValue(data->lightShader, data->ul_ambient, ambient_value, SHADER_U_VEC4);
+      engineCTX->SetShaderValue(data->lightShader, data->ul_lightColor, light_color, SHADER_U_VEC4);
+    } else {
+
+      f32 ambient_value[4] = {5.0f, 5.0f, 5.0f, 5.0f};
+      f32 light_color[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+
+      engineCTX->SetShaderValue(data->lightShader, data->ul_ambient, ambient_value, SHADER_U_VEC4);
+      engineCTX->SetShaderValue(data->lightShader, data->ul_lightColor, light_color, SHADER_U_VEC4);
+    }
+  }
+
   engineCTX->ClearBackground(Color_{0, 0, 0, 255});
 
   engineCTX->BeginMode3D(data->camera);
@@ -678,11 +708,7 @@ SceneAPI void scene_render(struct Scene *self, RayAPI *engineCTX) {
     engineCTX->EndShaderMode();
     
     for (u32 cubeIndex = 0; cubeIndex < data->cubert_count; cubeIndex++) {
-      if (data->RenderToggle) {
         engineCTX->DrawMesh(data->cuberts[cubeIndex].cubert_mesh, data->wall_material, data->wall_matrix);
-      } else {
-        NewDebugRenderCube(&data->cuberts[cubeIndex], engineCTX);
-      }
     }
   engineCTX->EndMode3D();
   
@@ -713,13 +739,17 @@ SceneAPI void scene_onEnter(struct Scene *self, RayAPI *engineCTX) {
 
   data->lightShader = engineCTX->LoadShader("../shaders/basic_lighting.vert", "../shaders/basic_lighting.frag");
   
-  s32 uniform_location_ambient = engineCTX->GetShaderLocation(data->lightShader, "ambient");
-  s32 uniform_location_lightColor = engineCTX->GetShaderLocation(data->lightShader, "lightColor");
+  data->ul_ambient = engineCTX->GetShaderLocation(data->lightShader, "ambient");
+  data->ul_lightColor = engineCTX->GetShaderLocation(data->lightShader, "lightColor");
+
+  data->FlashLightOn = true;
+
   f32 ambient_value[4] = {0.5f, 0.5f, 0.5f, 0.5f};
   f32 light_color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 
-  engineCTX->SetShaderValue(data->lightShader, uniform_location_ambient, ambient_value, SHADER_U_VEC4);
-  engineCTX->SetShaderValue(data->lightShader, uniform_location_lightColor, light_color, SHADER_U_VEC4);
+  engineCTX->SetShaderValue(data->lightShader, data->ul_ambient, ambient_value, SHADER_U_VEC4);
+  engineCTX->SetShaderValue(data->lightShader, data->ul_lightColor, light_color, SHADER_U_VEC4);
+
   data->lightShader.locs[17] = engineCTX->GetShaderLocation(data->lightShader, "normalMap");
   data->lightShader.locs[18] = engineCTX->GetShaderLocation(data->lightShader, "roughMap");
 
