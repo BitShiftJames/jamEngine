@@ -22,7 +22,7 @@ uniform vec4 lightColor;
 
 void main() {
   // tex color
-  vec4 texColor = texture(texture0, fragTexCoord);
+  vec4 texColor = texture(texture0, fract(fragTexCoord));
   vec4 tint = fragColor * colDiffuse;
 
   // 
@@ -55,4 +55,5 @@ void main() {
 
   finalColor = (texColor*((tint + vec4(specular, 1.0))*vec4(lightDot, 1.0)));
   finalColor += texColor*(ambient/10.0)*tint;
+  //finalColor = vec4(normal, 1.0);
 }

@@ -51,7 +51,19 @@ struct Cubert {
     };
     f32 raw_normals[Vertex_per_face * num_faces_on_cube * sizeof(v3)];
   };
-  
+
+  union {
+    struct {
+      v4 Front_tangents[Vertex_per_face];
+      v4 Back_tangents[Vertex_per_face];
+      v4 Top_tangents[Vertex_per_face];
+      v4 Bottom_tangents[Vertex_per_face];
+      v4 Left_tangents[Vertex_per_face];
+      v4 Right_tangents[Vertex_per_face];
+    };
+    f32 raw_tangents[Vertex_per_face * num_faces_on_cube * sizeof(v4)];
+  };
+
   s16 indices[num_faces_on_cube * Triangle_per_face * Points_Per_triangle];
 };
 
@@ -281,6 +293,13 @@ inline void SetUV(v2 *_00, v2 *_10, v2 *_11, v2 *_01) {
   _01[0] = {0.0f, 1.0f};
 }
 
+inline void SetUVwithScale(v2 *_00, v2 *_10, v2 *_11, v2 *_01, s32 hScale, s32 vScale) {
+  _00[0] = {0.0f * hScale, 0.0f * vScale};
+  _10[0] = {1.0f * hScale, 0.0f * vScale};
+  _11[0] = {1.0f * hScale, 1.0f * vScale};
+  _01[0] = {0.0f * hScale, 1.0f * vScale};
+}
+
 // Sets the normal of each vertex to the normal direction specified.
 inline void SetNormals(v3 *n0, v3 *n1, v3 *n2, v3 *n3, v3 normal_direction) {
   n0[0] = normal_direction;
@@ -289,35 +308,112 @@ inline void SetNormals(v3 *n0, v3 *n1, v3 *n2, v3 *n3, v3 normal_direction) {
   n3[0] = normal_direction;
 }
 
-void Construct_Cubert(v3 min, v3 max, Cubert *cubert, RayAPI *engineCTX) {
+inline void SetTangent(v4 *n0, v4 *n1, v4 *n2, v4 *n3, v4 Tangent_direction, bool Inverse_tangent_direction) {
+  if (Inverse_tangent_direction != 0) {
+    n0[0] = {Tangent_direction.x, Tangent_direction.y *-1, Tangent_direction.z, Tangent_direction.w};
+    n1[0] = {Tangent_direction.x, Tangent_direction.y *-1, Tangent_direction.z, Tangent_direction.w};
+    n2[0] = {Tangent_direction.x, Tangent_direction.y *-1, Tangent_direction.z, Tangent_direction.w};
+    n3[0] = {Tangent_direction.x, Tangent_direction.y *-1, Tangent_direction.z, Tangent_direction.w};
+  } else {
+    n0[0] = Tangent_direction;
+    n1[0] = Tangent_direction;
+    n2[0] = Tangent_direction;
+    n3[0] = Tangent_direction;
+  }
+}
 
-  // FIXME:
-  //  None of the UV generation is correct the UV's are not all going up.
-  //  They are also not scaled.
-  // FIXME:
-  //  The vertex tangent is not calculated for this cube which results in
-  //  garbage lighting values. To calculate the vertex tangent UV's have to be
-  //  Correct and you have to calculate the up vector for UV.x.
-  
+inline v4 calculatedVertexTangent(v3 p1, v3 p2, v3 p3, v2 uv1, v2 uv2, v2 uv3, v3 norm1) {
+    v4 result = {};
+
+    v3 delta_UX = (p2 - p1);
+    v3 delta_UY = (p3 - p1);
+
+    float x1 = delta_UY.x;
+    float y1 = delta_UY.y;
+    float z1 = delta_UY.z;
+
+    float x2 = delta_UX.x;
+    float y2 = delta_UX.y;
+    float z2 = delta_UX.z;
+
+    f32 s1 = uv2.x - uv1.x;
+    f32 t1 = uv2.y - uv1.y;
+
+    f32 s2 = uv3.x - uv1.x;
+    f32 t2 = uv3.y - uv1.y;
+
+    f32 inverse_snt = 1 / (s1 * t2 - s2 * t1);
+
+    v3 tdir = {(s1 * x2 - s2 * x1) * inverse_snt, 
+            (s1 * y2 - s2 * y1) * inverse_snt,
+            (s1 * z2 - s2 * z1) * inverse_snt};
+
+    v3 sdir = {(t2 * x1 - t1 * x2) * inverse_snt, 
+               (t2 * y1 - t1 * y2) * inverse_snt,
+               (t2 * z1 - t1 * z2) * inverse_snt};
+
+    v3 vertex_tangent = normalize((sdir - norm1 * dot_v3(norm1, sdir)));
+    f32 handediness = (dot_v3(cross(norm1, sdir), tdir) < 0.0f) ? -1.0 : 1.0;
+
+    result.x = vertex_tangent.x;
+    result.y = vertex_tangent.y;
+    result.z = vertex_tangent.z;
+
+    result.w = handediness;
+
+    return result;
+}
+
+void Construct_Cubert(v3 min, v3 max, Cubert *cubert, RayAPI *engineCTX) {
+  /*
+    FIXME: UV not scaled well.
+    FIXME: Vertex Tangents are not currently being summed per face so they won't work for unsmooth faces.
+    FIXME: Also the left and right faces tangents need to be inversed for it to be correct is this due to the math not being
+          universal or just a property of something. Also build in way to inverse tangent direction just because.
+  */
+
   v3 *Top = cubert->Top;
   Top[0] = {min.x, max.y, min.z};
   Top[1] = {min.x, max.y, max.z};
   Top[2] = {max.x, max.y, max.z};
   Top[3] = {max.x, max.y, min.z};
-
-  SetUV(&cubert->Top_uv[0], &cubert->Top_uv[1], &cubert->Top_uv[2], &cubert->Top_uv[3]);
+  
   SetNormals(&cubert->Top_normals[0], &cubert->Top_normals[1], 
              &cubert->Top_normals[2], &cubert->Top_normals[3], v3{0.0f, 1.0f, 0.0f});
+
+  {
+    f32 Distance = (Top[2].x - Top[0].x);
+    f32 Scaler = ( (Top[2].z - Top[0].z) / Distance) + 1;
+    
+
+    printf("[Top] |Distance (%f), Scaler (%f)\n", Distance, Scaler);
+    SetUVwithScale(&cubert->Top_uv[0], &cubert->Top_uv[1], &cubert->Top_uv[2], &cubert->Top_uv[3], Scaler, 1);
+
+    v4 vertex_normal = calculatedVertexTangent(Top[0], Top[1], Top[3], cubert->Top_uv[0], cubert->Top_uv[1], cubert->Top_uv[3], cubert->Top_normals[0]);
+    SetTangent(&cubert->Top_tangents[0], &cubert->Top_tangents[1], &cubert->Top_tangents[2], &cubert->Top_tangents[3], vertex_normal, 0);
+  }
+
   
   v3 *Bottom = cubert->Bottom;
   Bottom[0] = {max.x, min.y, max.z};
   Bottom[1] = {min.x, min.y, max.z};
   Bottom[2] = {min.x, min.y, min.z};
   Bottom[3] = {max.x, min.y, min.z};
-  
-  SetUV(&cubert->Bottom_uv[0], &cubert->Bottom_uv[1], &cubert->Bottom_uv[2], &cubert->Bottom_uv[3]);
+
   SetNormals(&cubert->Bottom_normals[0], &cubert->Bottom_normals[1], 
              &cubert->Bottom_normals[2], &cubert->Bottom_normals[3], v3{0.0f, -1.0f, 0.0f});
+
+  { 
+
+    f32 Distance = (Bottom[0].x - Bottom[2].x);
+    f32 Scaler = ((Bottom[0].z - Bottom[2].z) / Distance) + 1;
+    printf("[Bottom] |Distance (%f), Scaler (%f)\n", Distance, Scaler);
+    SetUVwithScale(&cubert->Bottom_uv[2], &cubert->Bottom_uv[1], &cubert->Bottom_uv[0], &cubert->Bottom_uv[3], Scaler, 1);
+
+    v4 vertex_normal = calculatedVertexTangent(Bottom[0], Bottom[1], Bottom[3], cubert->Bottom_uv[0], cubert->Bottom_uv[1], cubert->Bottom_uv[3], cubert->Bottom_normals[0]);
+    SetTangent(&cubert->Bottom_tangents[0], &cubert->Bottom_tangents[1], &cubert->Bottom_tangents[2], &cubert->Bottom_tangents[3], vertex_normal, 0);
+  }
+
 
   v3 *Left= cubert->Left;
   Left[0] = {min.x, max.y, min.z};
@@ -325,9 +421,19 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert, RayAPI *engineCTX) {
   Left[2] = {max.x, min.y, min.z};
   Left[3] = {min.x, min.y, min.z};
 
-  SetUV(&cubert->Left_uv[0], &cubert->Left_uv[1], &cubert->Left_uv[2], &cubert->Left_uv[3]);
   SetNormals(&cubert->Left_normals[0], &cubert->Left_normals[1], 
              &cubert->Left_normals[2], &cubert->Left_normals[3], v3{0.0f, 0.0f, -1.0f});
+
+  {
+    f32 Distance = (Left[1].y - Left[3].y);
+    f32 Scaler = ((Left[1].x - Left[3].x) / Distance) + 1;
+    printf("[Left] |Distance (%f), Scaler (%f)\n", Distance, Scaler);
+    SetUVwithScale(&cubert->Left_uv[3], &cubert->Left_uv[2], &cubert->Left_uv[1], &cubert->Left_uv[0], Scaler, 1);
+
+    v4 vertex_tangent = calculatedVertexTangent(Left[3], Left[0], Left[2], cubert->Left_uv[3], cubert->Left_uv[0], cubert->Left_uv[2], cubert->Left_normals[0]);
+    SetTangent(&cubert->Left_tangents[0], &cubert->Left_tangents[1], &cubert->Left_tangents[2], &cubert->Left_tangents[3], vertex_tangent, 1);
+  }
+
 
   v3 *Right = cubert->Right;
   Right[0] = {max.x, min.y, max.z};
@@ -335,9 +441,19 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert, RayAPI *engineCTX) {
   Right[2] = {min.x, max.y, max.z};
   Right[3] = {min.x, min.y, max.z};
 
-  SetUV(&cubert->Right_uv[0], &cubert->Right_uv[1], &cubert->Right_uv[2], &cubert->Right_uv[3]);
   SetNormals(&cubert->Right_normals[0], &cubert->Right_normals[1], 
              &cubert->Right_normals[2], &cubert->Right_normals[3], v3{0.0f, 0.0f, 1.0f});
+
+  {
+    f32 Distance = (Right[1].y - Right[3].y);
+    f32 Scaler = ((Right[1].x - Right[3].x) / Distance) + 1;
+    printf("[Right] |Distance (%f), Scaler (%f)\n", Distance, Scaler);
+    SetUVwithScale(&cubert->Right_uv[3], &cubert->Right_uv[0], &cubert->Right_uv[1], &cubert->Right_uv[2], Scaler, 1);
+
+    v4 vertex_tangent = calculatedVertexTangent(Right[3], Right[0], Right[2], cubert->Right_uv[3], cubert->Right_uv[0], cubert->Right_uv[2], cubert->Right_normals[0]);
+    SetTangent(&cubert->Right_tangents[0], &cubert->Right_tangents[1], &cubert->Right_tangents[2], &cubert->Right_tangents[3], vertex_tangent, 1);
+  }
+
   
   v3 *Front = cubert->Front;
   Front[0] = {max.x, min.y, min.z};
@@ -345,9 +461,19 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert, RayAPI *engineCTX) {
   Front[2] = {max.x, max.y, max.z};
   Front[3] = {max.x, min.y, max.z};
 
-  SetUV(&cubert->Front_uv[0], &cubert->Front_uv[1], &cubert->Front_uv[2], &cubert->Front_uv[3]);
   SetNormals(&cubert->Front_normals[0], &cubert->Front_normals[1], 
              &cubert->Front_normals[2], &cubert->Front_normals[3], v3{1.0f,  0.0f, 0.0f});
+
+  {
+    f32 Distance = (Front[2].y - Front[0].y);
+    f32 Scaler = ((Front[2].z - Front[0].z) / Distance) + 1;
+    printf("[Front] |Distance (%f), Scaler (%f)\n", Distance, Scaler);
+    SetUVwithScale(&cubert->Front_uv[2], &cubert->Front_uv[1], &cubert->Front_uv[0], &cubert->Front_uv[3], Scaler, 1);
+
+    v4 vertex_tangent = calculatedVertexTangent(Front[0], Front[1], Front[3], cubert->Front_uv[0], cubert->Front_uv[1], cubert->Front_uv[3], cubert->Front_normals[0]);
+    SetTangent(&cubert->Front_tangents[0], &cubert->Front_tangents[1], &cubert->Front_tangents[2], &cubert->Front_tangents[3], vertex_tangent, 0);
+  }
+
 
   v3 *Back = cubert->Back;
   Back[0] = {min.x, min.y, min.z};
@@ -355,9 +481,22 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert, RayAPI *engineCTX) {
   Back[2] = {min.x, max.y, max.z};
   Back[3] = {min.x, max.y, min.z};
 
-  SetUV(&cubert->Back_uv[0], &cubert->Back_uv[1], &cubert->Back_uv[2], &cubert->Back_uv[3]);
   SetNormals(&cubert->Back_normals[0], &cubert->Back_normals[1], 
              &cubert->Back_normals[2], &cubert->Back_normals[3], v3{-1.0f, 0.0f, 0.0f});
+  {
+    f32 Distance = (Back[2].y - Back[0].y);
+    f32 Scaler = ((Back[2].z - Back[0].z) / Distance) + 1;
+
+
+    printf("[Back] |Distance (%f), Scaler (%f)\n", Distance, Scaler);
+    SetUVwithScale(&cubert->Back_uv[0], &cubert->Back_uv[1], &cubert->Back_uv[2], &cubert->Back_uv[3], Scaler, 1);
+
+
+    v4 vertex_tangent = calculatedVertexTangent(Back[0], Back[1], Back[3], cubert->Back_uv[0], cubert->Back_uv[1], cubert->Back_uv[3], cubert->Back_normals[0]);
+    SetTangent(&cubert->Back_tangents[0], &cubert->Back_tangents[1], &cubert->Back_tangents[2], &cubert->Back_tangents[3], vertex_tangent, 0);
+
+  }
+
 
   int k = 0;
   for (int i = 0; i < 36; i += 6)
@@ -381,6 +520,7 @@ void Construct_Cubert(v3 min, v3 max, Cubert *cubert, RayAPI *engineCTX) {
   mesh->texcoords = cubert->raw_UVs;
   mesh->normals = cubert->raw_normals;
   mesh->indices = cubert->indices;
+  mesh->tangents = cubert->raw_tangents;
 
   printf("Mesh | vertexCount %u | triangleCount %u | vertices %p\n", mesh->vertexCount,
          mesh->triangleCount, mesh->vertices);
@@ -480,15 +620,15 @@ void DrawNormals(v3 *normals, v3 *points, RayAPI *engineCTX, Color_ color) {
 void NewDebugRenderCube(Cubert *cuburt, RayAPI *engineCTX) {
   v3 *bottom = cuburt->Bottom;
    
-  //engineCTX->DrawTriangle3D(bottom[0], bottom[1], bottom[2], WHITE);
-  //engineCTX->DrawTriangle3D(bottom[2], bottom[3], bottom[0], WHITE);
+  engineCTX->DrawTriangle3D(bottom[0], bottom[1], bottom[2], WHITE);
+  engineCTX->DrawTriangle3D(bottom[2], bottom[3], bottom[0], WHITE);
 
   //DrawNormals(cuburt->Bottom_normals, bottom, engineCTX, GREEN);
 
   v3 *top = cuburt->Top;
   
-  //engineCTX->DrawTriangle3D(top[0], top[1], top[2], WHITE);
-  //engineCTX->DrawTriangle3D(top[2], top[3], top[0], WHITE);
+  engineCTX->DrawTriangle3D(top[0], top[1], top[2], WHITE);
+  engineCTX->DrawTriangle3D(top[2], top[3], top[0], WHITE);
 
   //DrawNormals(cuburt->Top_normals, top, engineCTX, GREEN);
 
@@ -497,26 +637,26 @@ void NewDebugRenderCube(Cubert *cuburt, RayAPI *engineCTX) {
   engineCTX->DrawTriangle3D(front[0], front[1], front[2], Color_{255, 0, 255, 255});
   engineCTX->DrawTriangle3D(front[2], front[3], front[0], Color_{255, 0, 255, 255});
 
-  DrawNormals(cuburt->Front_normals, front, engineCTX, RED);
+  //DrawNormals(cuburt->Front_normals, front, engineCTX, RED);
   
   v3 *back = cuburt->Back;
   
-  //engineCTX->DrawTriangle3D(back[0], back[1], back[2], GREEN);
-  //engineCTX->DrawTriangle3D(back[2], back[3], back[0], GREEN);
+  engineCTX->DrawTriangle3D(back[0], back[1], back[2], GREEN);
+  engineCTX->DrawTriangle3D(back[2], back[3], back[0], GREEN);
 
   //DrawNormals(cuburt->Back_normals, back, engineCTX, RED);
 
   v3 *left = cuburt->Left;
   
-  //engineCTX->DrawTriangle3D(left[0], left[1], left[2], BLUE);
-  //engineCTX->DrawTriangle3D(left[2], left[3], left[0], BLUE);
+  engineCTX->DrawTriangle3D(left[0], left[1], left[2], BLUE);
+  engineCTX->DrawTriangle3D(left[2], left[3], left[0], BLUE);
 
   //DrawNormals(cuburt->Left_normals, left, engineCTX, BLUE);
 
   v3 *right = cuburt->Right;
 
-  //engineCTX->DrawTriangle3D(right[0], right[1], right[2], RED);
-  //engineCTX->DrawTriangle3D(right[2], right[3], right[0], RED);
+  engineCTX->DrawTriangle3D(right[0], right[1], right[2], RED);
+  engineCTX->DrawTriangle3D(right[2], right[3], right[0], RED);
 
   //DrawNormals(cuburt->Right_normals, right, engineCTX, BLUE);
 }
